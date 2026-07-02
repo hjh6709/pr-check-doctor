@@ -1,0 +1,18 @@
+name: PR Check Doctor
+description: Turn failed GitHub PR checks into one actionable comment.
+author: pr-check-doctor
+inputs:
+  github-token:
+    description: GitHub token used to read checks and write PR comments.
+    required: true
+  config-path:
+    description: Path to the PR Check Doctor config file.
+    required: false
+    default: .check-doctor.yml
+  dry-run:
+    description: Render output without writing a PR comment.
+    required: false
+    default: "false"
+runs:
+  using: node20
+  main: dist/index.js
