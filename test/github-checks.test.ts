@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { mapCheckRun, mapWorkflowJob } from "../src/github-checks.js";
+import {
+  mapCheckRun,
+  mapWorkflowJob,
+  normalizeGitHubChecks
+} from "../src/github-checks.js";
 
 describe("mapCheckRun", () => {
   it("maps a GitHub check run into a normalized check", () => {
@@ -61,5 +65,41 @@ describe("mapWorkflowJob", () => {
       conclusion: "unknown",
       status: "unknown"
     });
+  });
+});
+
+describe("normalizeGitHubChecks", () => {
+  it("combines check runs and workflow jobs into normalized checks", () => {
+    expect(
+      normalizeGitHubChecks({
+        checkRuns: [
+          {
+            name: "lint",
+            conclusion: "success",
+            status: "completed"
+          }
+        ],
+        workflowJobs: [
+          {
+            name: "test",
+            conclusion: "failure",
+            status: "completed",
+            workflow_name: "CI"
+          }
+        ]
+      })
+    ).toEqual([
+      {
+        name: "lint",
+        conclusion: "success",
+        status: "completed"
+      },
+      {
+        name: "test",
+        workflowName: "CI",
+        conclusion: "failure",
+        status: "completed"
+      }
+    ]);
   });
 });
