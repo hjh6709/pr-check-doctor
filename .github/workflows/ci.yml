@@ -33,5 +33,8 @@ jobs:
       - name: Typecheck
         run: npm run build
 
+      - name: Verify action bundle
+        run: npm run verify:action
+
       - name: Verify dry-run fixture
         run: npm run verify:dry-run
