@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fetchCheckRuns, fetchWorkflowJobs, fetchWorkflowRunIds } from "../src/github-api.js";
+import {
+  fetchCheckRuns,
+  fetchGitHubChecks,
+  fetchWorkflowJobs,
+  fetchWorkflowRunIds,
+  type GitHubChecksClient
+} from "../src/github-api.js";
 
 describe("fetchCheckRuns", () => {
   it("requests check runs for the PR head SHA and normalizes them", async () => {
@@ -138,5 +144,74 @@ describe("fetchWorkflowRunIds", () => {
       }
     ]);
     expect(runIds).toEqual([123, 456]);
+  });
+});
+
+describe("fetchGitHubChecks", () => {
+  it("collects check runs and workflow jobs for a PR head SHA", async () => {
+    const client = {
+      request: async (route, params) => {
+        if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+          return {
+            data: {
+              check_runs: [
+                {
+                  name: "lint",
+                  conclusion: "success",
+                  status: "completed"
+                }
+              ]
+            }
+          };
+        }
+
+        if (route === "GET /repos/{owner}/{repo}/actions/runs") {
+          return {
+            data: {
+              workflow_runs: [{ id: 123 }]
+            }
+          };
+        }
+
+        expect(params).toMatchObject({ run_id: 123 });
+
+        return {
+          data: {
+            jobs: [
+              {
+                name: "test",
+                conclusion: "failure",
+                status: "completed",
+                workflow_name: "CI"
+              }
+            ]
+          }
+        };
+      }
+    } as GitHubChecksClient;
+
+    const checks = await fetchGitHubChecks(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        pullNumber: 42,
+        headSha: "abc123"
+      },
+      client
+    );
+
+    expect(checks).toEqual([
+      {
+        name: "lint",
+        conclusion: "success",
+        status: "completed"
+      },
+      {
+        name: "test",
+        workflowName: "CI",
+        conclusion: "failure",
+        status: "completed"
+      }
+    ]);
   });
 });

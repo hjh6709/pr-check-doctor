@@ -61,6 +61,10 @@ export interface GitHubWorkflowRunsClient {
   ): Promise<WorkflowRunsResponse>;
 }
 
+export type GitHubChecksClient = GitHubCheckRunsClient &
+  GitHubWorkflowRunsClient &
+  GitHubWorkflowJobsClient;
+
 export interface WorkflowRunContext {
   owner: string;
   repo: string;
@@ -105,4 +109,28 @@ export async function fetchWorkflowRunIds(
   });
 
   return response.data.workflow_runs.map((run) => run.id);
+}
+
+export async function fetchGitHubChecks(
+  context: PullRequestContext,
+  client: GitHubChecksClient
+): Promise<NormalizedCheck[]> {
+  const [checkRuns, workflowRunIds] = await Promise.all([
+    fetchCheckRuns(context, client),
+    fetchWorkflowRunIds(context, client)
+  ]);
+  const workflowJobs = await Promise.all(
+    workflowRunIds.map((runId) =>
+      fetchWorkflowJobs(
+        {
+          owner: context.owner,
+          repo: context.repo,
+          runId
+        },
+        client
+      )
+    )
+  );
+
+  return [...checkRuns, ...workflowJobs.flat()];
 }
