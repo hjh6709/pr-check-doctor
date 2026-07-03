@@ -8,8 +8,10 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "build:action": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify:action": "npm run build:action && env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node dist/index.cjs",
     "verify:dry-run": "env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node --import tsx src/index.ts"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.19.1",
+    "esbuild": "^0.28.1",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
