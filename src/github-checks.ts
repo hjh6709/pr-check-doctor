@@ -15,6 +15,11 @@ export interface GitHubWorkflowJobLike {
   workflow_name?: string | null;
 }
 
+export interface GitHubChecksLike {
+  checkRuns: GitHubCheckRunLike[];
+  workflowJobs: GitHubWorkflowJobLike[];
+}
+
 export function mapCheckRun(checkRun: GitHubCheckRunLike): NormalizedCheck {
   return {
     name: checkRun.name,
@@ -30,6 +35,15 @@ export function mapWorkflowJob(job: GitHubWorkflowJobLike): NormalizedCheck {
     conclusion: normalizeConclusion(job.conclusion),
     status: normalizeStatus(job.status)
   };
+}
+
+export function normalizeGitHubChecks(
+  checks: GitHubChecksLike
+): NormalizedCheck[] {
+  return [
+    ...checks.checkRuns.map(mapCheckRun),
+    ...checks.workflowJobs.map(mapWorkflowJob)
+  ];
 }
 
 function normalizeConclusion(conclusion: string | null): CheckConclusion {
