@@ -9,11 +9,22 @@ export interface TriageCommentInput {
   logsByCheckName?: Record<string, string>;
 }
 
-export function createTriageComment(input: TriageCommentInput): string {
-  const checks = normalizeGitHubChecks(input.gitHubChecks).map((check) =>
-    attachLog(check, input.logsByCheckName)
-  );
+export interface TriageChecksInput {
+  config: DoctorConfig;
+  checks: NormalizedCheck[];
+  logsByCheckName?: Record<string, string>;
+}
 
+export function createTriageComment(input: TriageCommentInput): string {
+  return createTriageCommentFromChecks({
+    config: input.config,
+    checks: normalizeGitHubChecks(input.gitHubChecks),
+    logsByCheckName: input.logsByCheckName
+  });
+}
+
+export function createTriageCommentFromChecks(input: TriageChecksInput): string {
+  const checks = input.checks.map((check) => attachLog(check, input.logsByCheckName));
   return renderComment(analyzeChecks(checks, input.config));
 }
 
