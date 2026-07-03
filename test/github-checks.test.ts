@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapCheckRun } from "../src/github-checks.js";
+import { mapCheckRun, mapWorkflowJob } from "../src/github-checks.js";
 
 describe("mapCheckRun", () => {
   it("maps a GitHub check run into a normalized check", () => {
@@ -25,6 +25,39 @@ describe("mapCheckRun", () => {
       })
     ).toEqual({
       name: "custom check",
+      conclusion: "unknown",
+      status: "unknown"
+    });
+  });
+});
+
+describe("mapWorkflowJob", () => {
+  it("maps a GitHub workflow job into a normalized check", () => {
+    expect(
+      mapWorkflowJob({
+        name: "build",
+        conclusion: "failure",
+        status: "completed",
+        workflow_name: "CI"
+      })
+    ).toEqual({
+      name: "build",
+      workflowName: "CI",
+      conclusion: "failure",
+      status: "completed"
+    });
+  });
+
+  it("omits workflow name and uses unknown for unexpected values", () => {
+    expect(
+      mapWorkflowJob({
+        name: "deploy",
+        conclusion: "stale",
+        status: null,
+        workflow_name: null
+      })
+    ).toEqual({
+      name: "deploy",
       conclusion: "unknown",
       status: "unknown"
     });

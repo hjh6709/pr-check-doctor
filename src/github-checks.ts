@@ -8,11 +8,27 @@ export interface GitHubCheckRunLike {
   status: string | null;
 }
 
+export interface GitHubWorkflowJobLike {
+  name: string;
+  conclusion: string | null;
+  status: string | null;
+  workflow_name?: string | null;
+}
+
 export function mapCheckRun(checkRun: GitHubCheckRunLike): NormalizedCheck {
   return {
     name: checkRun.name,
     conclusion: normalizeConclusion(checkRun.conclusion),
     status: normalizeStatus(checkRun.status)
+  };
+}
+
+export function mapWorkflowJob(job: GitHubWorkflowJobLike): NormalizedCheck {
+  return {
+    name: job.name,
+    ...(job.workflow_name ? { workflowName: job.workflow_name } : {}),
+    conclusion: normalizeConclusion(job.conclusion),
+    status: normalizeStatus(job.status)
   };
 }
 
