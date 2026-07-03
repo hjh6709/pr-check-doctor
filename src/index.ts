@@ -1,11 +1,8 @@
 import * as core from "@actions/core";
+import { runAction } from "./action.js";
 
 export async function run(): Promise<void> {
-  const configPath = core.getInput("config-path") || ".check-doctor.yml";
-  const dryRun = core.getBooleanInput("dry-run");
-
-  core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);
-  core.info("GitHub check collection and PR comment upsert will be wired in the adapter phase.");
+  await runAction(core);
 }
 
 run().catch((error: unknown) => {

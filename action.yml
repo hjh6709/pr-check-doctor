@@ -13,6 +13,9 @@ inputs:
     description: Render output without writing a PR comment.
     required: false
     default: "false"
+  fixture-path:
+    description: Optional JSON fixture path used with dry-run for local Action verification.
+    required: false
 runs:
   using: node20
   main: dist/index.js
