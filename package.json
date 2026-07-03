@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:dry-run": "env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node --import tsx src/index.ts"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",

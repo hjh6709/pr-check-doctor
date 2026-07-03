@@ -32,3 +32,6 @@ jobs:
 
       - name: Typecheck
         run: npm run build
+
+      - name: Verify dry-run fixture
+        run: npm run verify:dry-run

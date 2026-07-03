@@ -1,0 +1,23 @@
+{
+  "config": "checks:\n  test:\n    category: test_failure\n    local_command: npm test\n    blocks_merge: true\n",
+  "gitHubChecks": {
+    "checkRuns": [
+      {
+        "name": "lint",
+        "conclusion": "success",
+        "status": "completed"
+      }
+    ],
+    "workflowJobs": [
+      {
+        "name": "test",
+        "conclusion": "failure",
+        "status": "completed",
+        "workflow_name": "CI"
+      }
+    ]
+  },
+  "logsByCheckName": {
+    "test": "Error: test failed password=hunter2"
+  }
+}
