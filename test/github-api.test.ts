@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchCheckRuns, fetchWorkflowJobs } from "../src/github-api.js";
+import { fetchCheckRuns, fetchWorkflowJobs, fetchWorkflowRunIds } from "../src/github-api.js";
 
 describe("fetchCheckRuns", () => {
   it("requests check runs for the PR head SHA and normalizes them", async () => {
@@ -99,5 +99,44 @@ describe("fetchWorkflowJobs", () => {
         status: "completed"
       }
     ]);
+  });
+});
+
+describe("fetchWorkflowRunIds", () => {
+  it("requests workflow runs for the PR head SHA and returns run ids", async () => {
+    const calls: Array<{ route: string; params: Record<string, string | number> }> = [];
+
+    const runIds = await fetchWorkflowRunIds(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        pullNumber: 42,
+        headSha: "abc123"
+      },
+      {
+        request: async (route, params) => {
+          calls.push({ route, params });
+
+          return {
+            data: {
+              workflow_runs: [{ id: 123 }, { id: 456 }]
+            }
+          };
+        }
+      }
+    );
+
+    expect(calls).toEqual([
+      {
+        route: "GET /repos/{owner}/{repo}/actions/runs",
+        params: {
+          owner: "octo-org",
+          repo: "pr-check-doctor",
+          head_sha: "abc123",
+          per_page: 100
+        }
+      }
+    ]);
+    expect(runIds).toEqual([123, 456]);
   });
 });

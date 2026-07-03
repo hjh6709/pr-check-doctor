@@ -19,6 +19,14 @@ interface WorkflowJobsResponse {
   };
 }
 
+interface WorkflowRunsResponse {
+  data: {
+    workflow_runs: Array<{
+      id: number;
+    }>;
+  };
+}
+
 export interface GitHubCheckRunsClient {
   request(
     route: "GET /repos/{owner}/{repo}/commits/{ref}/check-runs",
@@ -39,6 +47,18 @@ export interface GitHubWorkflowJobsClient {
       run_id: number;
     }
   ): Promise<WorkflowJobsResponse>;
+}
+
+export interface GitHubWorkflowRunsClient {
+  request(
+    route: "GET /repos/{owner}/{repo}/actions/runs",
+    params: {
+      owner: string;
+      repo: string;
+      head_sha: string;
+      per_page: number;
+    }
+  ): Promise<WorkflowRunsResponse>;
 }
 
 export interface WorkflowRunContext {
@@ -71,4 +91,18 @@ export async function fetchWorkflowJobs(
   });
 
   return response.data.jobs.map(mapWorkflowJob);
+}
+
+export async function fetchWorkflowRunIds(
+  context: PullRequestContext,
+  client: GitHubWorkflowRunsClient
+): Promise<number[]> {
+  const response = await client.request("GET /repos/{owner}/{repo}/actions/runs", {
+    owner: context.owner,
+    repo: context.repo,
+    head_sha: context.headSha,
+    per_page: 100
+  });
+
+  return response.data.workflow_runs.map((run) => run.id);
 }
