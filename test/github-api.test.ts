@@ -89,6 +89,39 @@ describe("createGitHubChecksClient", () => {
     ]);
     expect(checks.map((check) => check.name)).toEqual(["lint", "test"]);
   });
+
+  it("fails when GitHub pagination links repeat", async () => {
+    let requests = 0;
+    const loopUrl = "https://api.github.com/repos/octo-org/pr-check-doctor/check-runs?page=2";
+    const client = createGitHubChecksClient("github-token", {
+      getJson: async () => {
+        requests += 1;
+
+        if (requests > 3) {
+          throw new Error("pagination was not stopped");
+        }
+
+        return {
+          data: {
+            check_runs: []
+          },
+          nextUrl: loopUrl
+        };
+      }
+    });
+
+    await expect(
+      fetchCheckRuns(
+        {
+          owner: "octo-org",
+          repo: "pr-check-doctor",
+          pullNumber: 42,
+          headSha: "abc123"
+        },
+        client
+      )
+    ).rejects.toThrow("GitHub API pagination loop detected");
+  });
 });
 
 describe("createGitHubJobLogsClient", () => {
