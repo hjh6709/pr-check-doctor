@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  attachWorkflowJobLogs,
   createGitHubChecksClient,
   createGitHubChecksFetcher,
   createGitHubJobLogsClient,
@@ -8,7 +9,8 @@ import {
   fetchWorkflowJobLog,
   fetchWorkflowJobs,
   fetchWorkflowRunIds,
-  type GitHubChecksClient
+  type GitHubChecksClient,
+  type GitHubWorkflowJobLogsClient
 } from "../src/github-api.js";
 
 describe("createGitHubChecksClient", () => {
@@ -77,6 +79,68 @@ describe("createGitHubJobLogsClient", () => {
           "x-github-api-version": "2022-11-28"
         }) as Record<string, string>
       }
+    ]);
+  });
+});
+
+describe("attachWorkflowJobLogs", () => {
+  it("attaches logs to triage candidate workflow jobs", async () => {
+    const calls: number[] = [];
+    const client: GitHubWorkflowJobLogsClient = {
+      request: async (_route, params) => {
+        calls.push(params.job_id);
+
+        return {
+          data: `log for ${params.job_id}`
+        };
+      }
+    };
+
+    const checks = await attachWorkflowJobLogs(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor"
+      },
+      [
+        { jobId: 123, name: "test", conclusion: "failure", status: "completed" },
+        { jobId: 456, name: "lint", conclusion: "success", status: "completed" },
+        { name: "check run", conclusion: "failure", status: "completed" }
+      ],
+      client
+    );
+
+    expect(calls).toEqual([123]);
+    expect(checks).toEqual([
+      {
+        jobId: 123,
+        name: "test",
+        conclusion: "failure",
+        status: "completed",
+        log: "log for 123"
+      },
+      { jobId: 456, name: "lint", conclusion: "success", status: "completed" },
+      { name: "check run", conclusion: "failure", status: "completed" }
+    ]);
+  });
+
+  it("leaves a check unchanged when its log cannot be fetched", async () => {
+    const client: GitHubWorkflowJobLogsClient = {
+      request: async () => {
+        throw new Error("log unavailable");
+      }
+    };
+
+    await expect(
+      attachWorkflowJobLogs(
+        {
+          owner: "octo-org",
+          repo: "pr-check-doctor"
+        },
+        [{ jobId: 123, name: "test", conclusion: "failure", status: "completed" }],
+        client
+      )
+    ).resolves.toEqual([
+      { jobId: 123, name: "test", conclusion: "failure", status: "completed" }
     ]);
   });
 });

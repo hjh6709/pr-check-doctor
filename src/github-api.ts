@@ -4,6 +4,7 @@ import {
   type GitHubCheckRunLike,
   type GitHubWorkflowJobLike
 } from "./github-checks.js";
+import { selectTriageCandidates } from "./checks.js";
 import type { PullRequestContext } from "./github-event.js";
 import type { NormalizedCheck } from "./types.js";
 
@@ -179,6 +180,33 @@ export async function fetchWorkflowJobLog(
   });
 
   return response.data;
+}
+
+export async function attachWorkflowJobLogs(
+  context: Omit<WorkflowJobContext, "jobId">,
+  checks: NormalizedCheck[],
+  client: GitHubWorkflowJobLogsClient
+): Promise<NormalizedCheck[]> {
+  const triageJobIds = new Set(
+    selectTriageCandidates(checks)
+      .map((check) => check.jobId)
+      .filter((jobId): jobId is number => typeof jobId === "number")
+  );
+
+  return Promise.all(
+    checks.map(async (check) => {
+      if (typeof check.jobId !== "number" || !triageJobIds.has(check.jobId)) {
+        return check;
+      }
+
+      try {
+        const log = await fetchWorkflowJobLog({ ...context, jobId: check.jobId }, client);
+        return { ...check, log };
+      } catch {
+        return check;
+      }
+    })
+  );
 }
 
 export async function fetchGitHubChecks(
