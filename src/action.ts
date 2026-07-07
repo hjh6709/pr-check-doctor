@@ -1,8 +1,10 @@
 import { readFile as readFileFromFs } from "node:fs/promises";
 import { parseDoctorConfig } from "./config.js";
 import { parsePullRequestEvent } from "./github-event.js";
-import { createTriageComment } from "./triage.js";
+import { createTriageComment, createTriageCommentFromChecks } from "./triage.js";
 import type { GitHubChecksLike } from "./github-checks.js";
+import type { PullRequestContext } from "./github-event.js";
+import type { NormalizedCheck } from "./types.js";
 
 interface ActionCore {
   getInput(name: string): string;
@@ -11,6 +13,7 @@ interface ActionCore {
 }
 
 interface Runtime {
+  fetchChecks?(context: PullRequestContext): Promise<NormalizedCheck[]>;
   getEnv?(name: string): string | undefined;
   readFile(path: string): Promise<string>;
 }
@@ -52,6 +55,17 @@ export async function runAction(
     core.info(
       `Loaded PR context ${context.owner}/${context.repo}#${context.pullNumber} head=${context.headSha}`
     );
+
+    if (runtime.fetchChecks) {
+      const checks = await runtime.fetchChecks(context);
+      core.info(
+        createTriageCommentFromChecks({
+          config: parseDoctorConfig(""),
+          checks
+        })
+      );
+      return;
+    }
   }
 
   core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);

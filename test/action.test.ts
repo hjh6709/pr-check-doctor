@@ -86,4 +86,59 @@ checks:
       "Loaded PR context octo-org/pr-check-doctor#7 head=abc123"
     );
   });
+
+  it("renders a triage comment from collected GitHub checks", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+        readFile: async (path) => {
+          expect(path).toBe("event.json");
+
+          return JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          });
+        },
+        fetchChecks: async (context) => {
+          expect(context).toEqual({
+            owner: "octo-org",
+            repo: "pr-check-doctor",
+            pullNumber: 7,
+            headSha: "abc123"
+          });
+
+          return [
+            {
+              name: "test",
+              conclusion: "failure",
+              status: "completed"
+            }
+          ];
+        }
+      }
+    );
+
+    const output = messages.join("\n");
+
+    expect(output).toContain("<!-- pr-check-doctor -->");
+    expect(output).toContain("Verdict: WARN");
+    expect(output).toContain("#### test");
+  });
 });
