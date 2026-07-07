@@ -1,5 +1,6 @@
 import { readFile as readFileFromFs } from "node:fs/promises";
 import { parseDoctorConfig } from "./config.js";
+import { parsePullRequestEvent } from "./github-event.js";
 import { createTriageComment } from "./triage.js";
 import type { GitHubChecksLike } from "./github-checks.js";
 
@@ -10,6 +11,7 @@ interface ActionCore {
 }
 
 interface Runtime {
+  getEnv?(name: string): string | undefined;
   readFile(path: string): Promise<string>;
 }
 
@@ -20,6 +22,7 @@ interface TriageFixture {
 }
 
 const defaultRuntime: Runtime = {
+  getEnv: (name) => process.env[name],
   readFile: (path) => readFileFromFs(path, "utf8")
 };
 
@@ -41,6 +44,14 @@ export async function runAction(
 
     core.info(markdown);
     return;
+  }
+
+  const eventPath = runtime.getEnv?.("GITHUB_EVENT_PATH");
+  if (eventPath) {
+    const context = parsePullRequestEvent(JSON.parse(await runtime.readFile(eventPath)));
+    core.info(
+      `Loaded PR context ${context.owner}/${context.repo}#${context.pullNumber} head=${context.headSha}`
+    );
   }
 
   core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);
