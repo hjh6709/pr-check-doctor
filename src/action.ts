@@ -86,28 +86,30 @@ export async function runAction(
     );
 
     const fetchChecks = runtime.fetchChecks ?? createTokenFetchChecks(core, runtime);
-    if (fetchChecks) {
-      const configText = await readOptionalConfig(configPath, runtime);
-      const checks = await fetchChecks(context);
-      const markdown = createTriageCommentFromChecks({
-        config: parseDoctorConfig(configText),
-        checks
-      });
+    if (!fetchChecks) {
+      throw new Error("github-token input is required to read pull request checks.");
+    }
 
-      if (dryRun) {
-        core.info(markdown);
-        return;
-      }
+    const configText = await readOptionalConfig(configPath, runtime);
+    const checks = await fetchChecks(context);
+    const markdown = createTriageCommentFromChecks({
+      config: parseDoctorConfig(configText),
+      checks
+    });
 
-      const upsertComment = createTokenUpsertComment(core, runtime);
-      if (upsertComment) {
-        await upsertComment(context, markdown);
-        return;
-      }
-
+    if (dryRun) {
       core.info(markdown);
       return;
     }
+
+    const upsertComment = createTokenUpsertComment(core, runtime);
+    if (upsertComment) {
+      await upsertComment(context, markdown);
+      return;
+    }
+
+    core.info(markdown);
+    return;
   }
 
   core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);
