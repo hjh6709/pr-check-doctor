@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createGitHubChecksFetcher,
   fetchCheckRuns,
   fetchGitHubChecks,
   fetchWorkflowJobs,
@@ -209,6 +210,63 @@ describe("fetchGitHubChecks", () => {
       {
         name: "test",
         workflowName: "CI",
+        conclusion: "failure",
+        status: "completed"
+      }
+    ]);
+  });
+});
+
+describe("createGitHubChecksFetcher", () => {
+  it("creates a token-backed GitHub checks fetcher", async () => {
+    const tokens: string[] = [];
+    const fetchChecks = createGitHubChecksFetcher("github-token", (token) => {
+      tokens.push(token);
+
+      return {
+        request: async (route) => {
+          if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+            return {
+              data: {
+                check_runs: []
+              }
+            };
+          }
+
+          if (route === "GET /repos/{owner}/{repo}/actions/runs") {
+            return {
+              data: {
+                workflow_runs: [{ id: 123 }]
+              }
+            };
+          }
+
+          return {
+            data: {
+              jobs: [
+                {
+                  name: "test",
+                  conclusion: "failure",
+                  status: "completed"
+                }
+              ]
+            }
+          };
+        }
+      } as GitHubChecksClient;
+    });
+
+    const checks = await fetchChecks({
+      owner: "octo-org",
+      repo: "pr-check-doctor",
+      pullNumber: 42,
+      headSha: "abc123"
+    });
+
+    expect(tokens).toEqual(["github-token"]);
+    expect(checks).toEqual([
+      {
+        name: "test",
         conclusion: "failure",
         status: "completed"
       }
