@@ -9,12 +9,22 @@ export function renderComment(result: AnalysisResult): string {
     "",
     `Verdict: ${result.verdict}`,
     "",
+    renderWarnings(result.warnings),
+    "",
     renderIssues(result.issues),
     "",
     renderNextActions(result.issues)
   ];
 
   return sections.filter((section) => section.length > 0).join("\n").trimEnd();
+}
+
+function renderWarnings(warnings: string[]): string {
+  if (warnings.length === 0) {
+    return "";
+  }
+
+  return ["### Warnings", "", ...warnings.map((warning) => `- ${warning}`)].join("\n");
 }
 
 function renderIssues(issues: ClassifiedIssue[]): string {

@@ -70,4 +70,5 @@ export interface ClassifiedIssue {
 export interface AnalysisResult {
   verdict: Verdict;
   issues: ClassifiedIssue[];
+  warnings: string[];
 }

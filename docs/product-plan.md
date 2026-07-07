@@ -89,6 +89,12 @@ checks:
 - 최소 권한을 기본으로 한다: `actions: read`, `checks: read`, `contents: read`, `pull-requests: write`.
 - dry-run mode를 지원해서 comment 작성 전 결과를 확인할 수 있게 한다.
 
+## 운영 기준
+
+- PR Check Doctor는 분석 대상 CI job들이 끝난 뒤 실행되어야 한다.
+- 기본 사용법은 마지막 job에 배치하고 `if: always()`와 `needs`로 test, lint, build job을 기다리는 방식으로 안내한다.
+- 아직 `queued` 또는 `in_progress` check가 있으면 comment에 불완전한 triage일 수 있다는 경고를 표시한다.
+
 ## 구현 순서
 
 이미 구현된 core:
