@@ -1,6 +1,7 @@
 import {
   mapCheckRun,
   mapWorkflowJob,
+  deduplicateNormalizedChecks,
   type GitHubCheckRunLike,
   type GitHubWorkflowJobLike
 } from "./github-checks.js";
@@ -256,7 +257,7 @@ export async function fetchGitHubChecks(
     )
   );
 
-  return [...checkRuns, ...workflowJobs.flat()];
+  return deduplicateNormalizedChecks([...checkRuns, ...workflowJobs.flat()]);
 }
 
 export function createGitHubChecksFetcher(

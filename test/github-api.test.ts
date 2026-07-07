@@ -453,6 +453,68 @@ describe("fetchGitHubChecks", () => {
       }
     ]);
   });
+
+  it("deduplicates mirrored check runs and workflow jobs", async () => {
+    const client = {
+      request: async (route) => {
+        if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+          return {
+            data: {
+              check_runs: [
+                {
+                  name: "manual test failure",
+                  conclusion: "failure",
+                  status: "completed"
+                }
+              ]
+            }
+          };
+        }
+
+        if (route === "GET /repos/{owner}/{repo}/actions/runs") {
+          return {
+            data: {
+              workflow_runs: [{ id: 123 }]
+            }
+          };
+        }
+
+        return {
+          data: {
+            jobs: [
+              {
+                id: 12345,
+                name: "manual test failure",
+                conclusion: "failure",
+                status: "completed",
+                workflow_name: "CI"
+              }
+            ]
+          }
+        };
+      }
+    } as GitHubChecksClient;
+
+    const checks = await fetchGitHubChecks(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        pullNumber: 42,
+        headSha: "abc123"
+      },
+      client
+    );
+
+    expect(checks).toEqual([
+      {
+        jobId: 12345,
+        name: "manual test failure",
+        workflowName: "CI",
+        conclusion: "failure",
+        status: "completed"
+      }
+    ]);
+  });
 });
 
 describe("createGitHubChecksFetcher", () => {

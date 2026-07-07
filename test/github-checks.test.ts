@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deduplicateNormalizedChecks,
   mapCheckRun,
   mapWorkflowJob,
   normalizeGitHubChecks
@@ -106,6 +107,51 @@ describe("normalizeGitHubChecks", () => {
         conclusion: "failure",
         status: "completed"
       }
+    ]);
+  });
+
+  it("prefers workflow jobs over duplicate check runs", () => {
+    expect(
+      normalizeGitHubChecks({
+        checkRuns: [
+          {
+            name: "manual test failure",
+            conclusion: "failure",
+            status: "completed"
+          }
+        ],
+        workflowJobs: [
+          {
+            id: 123,
+            name: "manual test failure",
+            conclusion: "failure",
+            status: "completed",
+            workflow_name: "CI"
+          }
+        ]
+      })
+    ).toEqual([
+      {
+        jobId: 123,
+        name: "manual test failure",
+        workflowName: "CI",
+        conclusion: "failure",
+        status: "completed"
+      }
+    ]);
+  });
+});
+
+describe("deduplicateNormalizedChecks", () => {
+  it("keeps same-name workflow jobs when they have different job ids", () => {
+    expect(
+      deduplicateNormalizedChecks([
+        { jobId: 123, name: "test", conclusion: "failure", status: "completed" },
+        { jobId: 456, name: "test", conclusion: "failure", status: "completed" }
+      ])
+    ).toEqual([
+      { jobId: 123, name: "test", conclusion: "failure", status: "completed" },
+      { jobId: 456, name: "test", conclusion: "failure", status: "completed" }
     ]);
   });
 });
