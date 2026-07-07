@@ -377,4 +377,66 @@ checks:
     expect(comments[0]?.pullNumber).toBe(7);
     expect(comments[0]?.body).toContain("<!-- pr-check-doctor -->");
   });
+
+  it("does not warn about the currently running doctor job", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: (name) => name === "dry-run",
+        info: (message) => messages.push(message)
+      },
+      {
+        fetchChecks: async () => [
+          {
+            name: "manual test failure",
+            conclusion: "failure",
+            status: "completed"
+          },
+          {
+            name: "doctor smoke",
+            conclusion: "unknown",
+            status: "in_progress"
+          }
+        ],
+        getEnv: (name) => {
+          if (name === "GITHUB_EVENT_PATH") {
+            return "event.json";
+          }
+
+          if (name === "GITHUB_JOB") {
+            return "doctor-smoke";
+          }
+
+          return undefined;
+        },
+        readFile: async (path) => {
+          if (path === ".check-doctor.yml") {
+            throw Object.assign(new Error("missing config"), { code: "ENOENT" });
+          }
+
+          return JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          });
+        }
+      }
+    );
+
+    const output = messages.join("\n");
+
+    expect(output).toContain("#### manual test failure");
+    expect(output).not.toContain("Some checks are still running or queued");
+  });
 });
