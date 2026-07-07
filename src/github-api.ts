@@ -88,8 +88,15 @@ export type GitHubChecksFetcher = (context: PullRequestContext) => Promise<Norma
 export type GetOctokit = (token: string) => GitHubChecksClient;
 export type GetGitHubJobLogsClient = (token: string) => GitHubWorkflowJobLogsClient;
 
+interface GitHubJsonPage {
+  data: unknown;
+  nextUrl?: string;
+}
+
+type GitHubJsonTransportResult = GitHubJsonPage | unknown;
+
 export interface GitHubJsonTransport {
-  getJson(url: string, headers: Record<string, string>): Promise<unknown>;
+  getJson(url: string, headers: Record<string, string>): Promise<GitHubJsonTransportResult>;
 }
 
 export interface GitHubTextTransport {
@@ -104,7 +111,10 @@ const defaultGitHubTransport: GitHubJsonTransport = {
       throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return {
+      data: await response.json(),
+      nextUrl: parseNextLinkUrl(response.headers.get("link"))
+    };
   }
 };
 
@@ -302,12 +312,13 @@ export function createGitHubChecksClient(
   transport: GitHubJsonTransport = defaultGitHubTransport
 ): GitHubChecksClient {
   const request = async (route: string, params: Record<string, string | number>) => {
-    const data = await transport.getJson(buildGitHubApiUrl(route, params), {
+    const headers = {
       accept: "application/vnd.github+json",
       authorization: `Bearer ${token}`,
       "user-agent": "pr-check-doctor",
       "x-github-api-version": "2022-11-28"
-    });
+    };
+    const data = await fetchMergedJsonPages(buildGitHubApiUrl(route, params), headers, transport);
 
     return { data };
   };
@@ -354,4 +365,80 @@ function buildGitHubApiUrl(route: string, params: Record<string, string | number
   }
 
   throw new Error(`Unsupported GitHub API route: ${route}`);
+}
+
+async function fetchMergedJsonPages(
+  url: string,
+  headers: Record<string, string>,
+  transport: GitHubJsonTransport
+): Promise<unknown> {
+  const pages: unknown[] = [];
+  let nextUrl: string | undefined = url;
+
+  while (nextUrl) {
+    const page = normalizeJsonPage(await transport.getJson(nextUrl, headers));
+    pages.push(page.data);
+    nextUrl = page.nextUrl;
+  }
+
+  return mergeJsonPages(pages);
+}
+
+function normalizeJsonPage(result: GitHubJsonTransportResult): GitHubJsonPage {
+  if (isJsonPageEnvelope(result)) {
+    return {
+      data: result.data,
+      nextUrl: typeof result.nextUrl === "string" ? result.nextUrl : undefined
+    };
+  }
+
+  return { data: result };
+}
+
+function isJsonPageEnvelope(value: unknown): value is GitHubJsonPage {
+  return (
+    isRecord(value) &&
+    "data" in value &&
+    !("check_runs" in value) &&
+    !("jobs" in value) &&
+    !("workflow_runs" in value)
+  );
+}
+
+function mergeJsonPages(pages: unknown[]): unknown {
+  const firstPage = pages[0];
+
+  if (pages.length <= 1 || !isRecord(firstPage)) {
+    return firstPage;
+  }
+
+  for (const key of ["check_runs", "jobs", "workflow_runs"]) {
+    if (Array.isArray(firstPage[key])) {
+      return {
+        ...firstPage,
+        [key]: pages.flatMap((page) => (isRecord(page) && Array.isArray(page[key]) ? page[key] : []))
+      };
+    }
+  }
+
+  return firstPage;
+}
+
+function parseNextLinkUrl(linkHeader: string | null): string | undefined {
+  if (!linkHeader) {
+    return undefined;
+  }
+
+  for (const part of linkHeader.split(",")) {
+    const match = part.match(/<([^>]+)>;\s*rel="next"/);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
