@@ -46,6 +46,9 @@ jobs:
       - name: Verify action bundle
         run: npm run verify:action
 
+      - name: Check committed action bundle
+        run: git diff --exit-code -- dist/index.cjs
+
       - name: Verify dry-run fixture
         run: npm run verify:dry-run
 

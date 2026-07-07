@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "build:action": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --minify --outfile=dist/index.cjs",
+    "build:action": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --minify --outfile=dist/index.cjs && perl -pi -e 's/[[:blank:]]+$//' dist/index.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:action": "npm run build:action && env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node dist/index.cjs",
