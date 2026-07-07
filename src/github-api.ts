@@ -27,6 +27,10 @@ interface WorkflowRunsResponse {
   };
 }
 
+interface WorkflowJobLogResponse {
+  data: string;
+}
+
 export interface GitHubCheckRunsClient {
   request(
     route: "GET /repos/{owner}/{repo}/commits/{ref}/check-runs",
@@ -61,6 +65,17 @@ export interface GitHubWorkflowRunsClient {
   ): Promise<WorkflowRunsResponse>;
 }
 
+export interface GitHubWorkflowJobLogsClient {
+  request(
+    route: "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs",
+    params: {
+      owner: string;
+      repo: string;
+      job_id: number;
+    }
+  ): Promise<WorkflowJobLogResponse>;
+}
+
 export type GitHubChecksClient = GitHubCheckRunsClient &
   GitHubWorkflowRunsClient &
   GitHubWorkflowJobsClient;
@@ -71,6 +86,10 @@ export type GetOctokit = (token: string) => GitHubChecksClient;
 
 export interface GitHubJsonTransport {
   getJson(url: string, headers: Record<string, string>): Promise<unknown>;
+}
+
+export interface GitHubTextTransport {
+  getText(url: string, headers: Record<string, string>): Promise<string>;
 }
 
 const defaultGitHubTransport: GitHubJsonTransport = {
@@ -85,10 +104,28 @@ const defaultGitHubTransport: GitHubJsonTransport = {
   }
 };
 
+const defaultGitHubTextTransport: GitHubTextTransport = {
+  getText: async (url, headers) => {
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return response.text();
+  }
+};
+
 export interface WorkflowRunContext {
   owner: string;
   repo: string;
   runId: number;
+}
+
+export interface WorkflowJobContext {
+  owner: string;
+  repo: string;
+  jobId: number;
 }
 
 export async function fetchCheckRuns(
@@ -131,6 +168,19 @@ export async function fetchWorkflowRunIds(
   return response.data.workflow_runs.map((run) => run.id);
 }
 
+export async function fetchWorkflowJobLog(
+  context: WorkflowJobContext,
+  client: GitHubWorkflowJobLogsClient
+): Promise<string> {
+  const response = await client.request("GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs", {
+    owner: context.owner,
+    repo: context.repo,
+    job_id: context.jobId
+  });
+
+  return response.data;
+}
+
 export async function fetchGitHubChecks(
   context: PullRequestContext,
   client: GitHubChecksClient
@@ -162,6 +212,26 @@ export function createGitHubChecksFetcher(
   const client = getOctokit(token);
 
   return (context) => fetchGitHubChecks(context, client);
+}
+
+export function createGitHubJobLogsClient(
+  token: string,
+  transport: GitHubTextTransport = defaultGitHubTextTransport
+): GitHubWorkflowJobLogsClient {
+  const request = async (route: string, params: Record<string, string | number>) => {
+    const data = await transport.getText(buildGitHubApiUrl(route, params), {
+      accept: "application/vnd.github+json",
+      authorization: `Bearer ${token}`,
+      "user-agent": "pr-check-doctor",
+      "x-github-api-version": "2022-11-28"
+    });
+
+    return { data };
+  };
+
+  return {
+    request: request as GitHubWorkflowJobLogsClient["request"]
+  };
 }
 
 export function createGitHubChecksClient(
@@ -197,6 +267,10 @@ function buildGitHubApiUrl(route: string, params: Record<string, string | number
 
   if (route === "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs") {
     return `${baseUrl}/repos/${owner}/${repo}/actions/runs/${params.run_id}/jobs`;
+  }
+
+  if (route === "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs") {
+    return `${baseUrl}/repos/${owner}/${repo}/actions/jobs/${params.job_id}/logs`;
   }
 
   if (route === "GET /repos/{owner}/{repo}/actions/runs") {

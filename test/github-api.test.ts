@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   createGitHubChecksClient,
   createGitHubChecksFetcher,
+  createGitHubJobLogsClient,
   fetchCheckRuns,
   fetchGitHubChecks,
+  fetchWorkflowJobLog,
   fetchWorkflowJobs,
   fetchWorkflowRunIds,
   type GitHubChecksClient
@@ -35,6 +37,40 @@ describe("createGitHubChecksClient", () => {
     expect(requests).toEqual([
       {
         url: "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/check-runs",
+        headers: expect.objectContaining({
+          accept: "application/vnd.github+json",
+          authorization: "Bearer github-token",
+          "x-github-api-version": "2022-11-28"
+        }) as Record<string, string>
+      }
+    ]);
+  });
+});
+
+describe("createGitHubJobLogsClient", () => {
+  it("creates a token-backed REST client for workflow job logs", async () => {
+    const requests: Array<{ url: string; headers: Record<string, string> }> = [];
+    const client = createGitHubJobLogsClient("github-token", {
+      getText: async (url, headers) => {
+        requests.push({ url, headers });
+
+        return "Error: test failed";
+      }
+    });
+
+    const log = await fetchWorkflowJobLog(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        jobId: 123
+      },
+      client
+    );
+
+    expect(log).toBe("Error: test failed");
+    expect(requests).toEqual([
+      {
+        url: "https://api.github.com/repos/octo-org/pr-check-doctor/actions/jobs/123/logs",
         headers: expect.objectContaining({
           accept: "application/vnd.github+json",
           authorization: "Bearer github-token",
