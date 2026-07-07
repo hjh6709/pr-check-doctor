@@ -13,6 +13,7 @@ export interface TriageChecksInput {
   config: DoctorConfig;
   checks: NormalizedCheck[];
   logsByCheckName?: Record<string, string>;
+  ignoredWarningCheckNames?: string[];
 }
 
 export function createTriageComment(input: TriageCommentInput): string {
@@ -25,7 +26,11 @@ export function createTriageComment(input: TriageCommentInput): string {
 
 export function createTriageCommentFromChecks(input: TriageChecksInput): string {
   const checks = input.checks.map((check) => attachLog(check, input.logsByCheckName));
-  return renderComment(analyzeChecks(checks, input.config));
+  return renderComment(
+    analyzeChecks(checks, input.config, {
+      ignoredWarningCheckNames: input.ignoredWarningCheckNames
+    })
+  );
 }
 
 function attachLog(

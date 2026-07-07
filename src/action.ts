@@ -97,7 +97,9 @@ export async function runAction(
     const checks = await fetchChecks(context);
     const markdown = createTriageCommentFromChecks({
       config: parseDoctorConfig(configText),
-      checks
+      checks,
+      // The action job is necessarily in progress while it renders the comment.
+      ignoredWarningCheckNames: createCurrentCheckNameCandidates(runtime)
     });
 
     if (dryRun) {
@@ -143,6 +145,12 @@ function createTokenUpsertComment(
   }
 
   return runtime.createUpsertComment(token);
+}
+
+function createCurrentCheckNameCandidates(runtime: Runtime): string[] {
+  const jobId = runtime.getEnv?.("GITHUB_JOB");
+
+  return jobId ? [jobId] : [];
 }
 
 function createGitHubCommentUpserter(client: GitHubCommentsClient): GitHubCommentUpserter {
