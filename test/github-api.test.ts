@@ -144,6 +144,26 @@ describe("attachWorkflowJobLogs", () => {
       { jobId: 123, name: "test", conclusion: "failure", status: "completed" }
     ]);
   });
+
+  it("caps attached logs before analysis", async () => {
+    const client: GitHubWorkflowJobLogsClient = {
+      request: async () => ({
+        data: "0123456789abcdef"
+      })
+    };
+
+    const checks = await attachWorkflowJobLogs(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor"
+      },
+      [{ jobId: 123, name: "test", conclusion: "failure", status: "completed" }],
+      client,
+      { maxLogChars: 10 }
+    );
+
+    expect(checks[0]?.log).toBe("0123456789");
+  });
 });
 
 describe("fetchCheckRuns", () => {
