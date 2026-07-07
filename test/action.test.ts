@@ -92,11 +92,19 @@ checks:
 
     await runAction(
       {
-        getInput: (name) => (name === "config-path" ? ".check-doctor.yml" : ""),
-        getBooleanInput: () => false,
+        getInput: (name) =>
+          name === "config-path"
+            ? ".check-doctor.yml"
+            : name === "github-token"
+              ? "github-token"
+              : "",
+        getBooleanInput: (name) => name === "dry-run",
         info: (message) => messages.push(message)
       },
       {
+        createUpsertComment: () => {
+          throw new Error("dry-run should not write a PR comment");
+        },
         getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
         readFile: async (path) => {
           if (path === ".check-doctor.yml") {
@@ -244,5 +252,56 @@ checks:
 
     expect(tokens).toEqual(["github-token"]);
     expect(messages.join("\n")).toContain("<!-- pr-check-doctor -->");
+  });
+
+  it("writes the triage comment to the pull request outside dry-run mode", async () => {
+    const comments: Array<{ body: string; pullNumber: number }> = [];
+
+    await runAction(
+      {
+        getInput: (name) => (name === "github-token" ? "github-token" : ""),
+        getBooleanInput: () => false,
+        info: () => undefined
+      },
+      {
+        createUpsertComment: (token) => {
+          expect(token).toBe("github-token");
+
+          return async (context, body) => {
+            comments.push({
+              body,
+              pullNumber: context.pullNumber
+            });
+          };
+        },
+        fetchChecks: async () => [
+          {
+            name: "test",
+            conclusion: "failure",
+            status: "completed"
+          }
+        ],
+        getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+        readFile: async () =>
+          JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          })
+      }
+    );
+
+    expect(comments).toHaveLength(1);
+    expect(comments[0]?.pullNumber).toBe(7);
+    expect(comments[0]?.body).toContain("<!-- pr-check-doctor -->");
   });
 });
