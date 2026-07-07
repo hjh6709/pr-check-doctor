@@ -2,7 +2,8 @@ import { readFile as readFileFromFs } from "node:fs/promises";
 import { parseDoctorConfig } from "./config.js";
 import {
   createGitHubChecksClient,
-  createGitHubChecksFetcher,
+  createGitHubChecksWithLogsFetcher,
+  createGitHubJobLogsClient,
   type GitHubChecksFetcher
 } from "./github-api.js";
 import {
@@ -39,7 +40,12 @@ interface TriageFixture {
 }
 
 const defaultRuntime: Runtime = {
-  createFetchChecks: (token) => createGitHubChecksFetcher(token, createGitHubChecksClient),
+  createFetchChecks: (token) =>
+    createGitHubChecksWithLogsFetcher(
+      token,
+      createGitHubChecksClient,
+      createGitHubJobLogsClient
+    ),
   createUpsertComment: (token) =>
     createGitHubCommentUpserter(createGitHubCommentsClient(token)),
   getEnv: (name) => process.env[name],

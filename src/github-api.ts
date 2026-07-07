@@ -84,6 +84,7 @@ export type GitHubChecksClient = GitHubCheckRunsClient &
 export type GitHubChecksFetcher = (context: PullRequestContext) => Promise<NormalizedCheck[]>;
 
 export type GetOctokit = (token: string) => GitHubChecksClient;
+export type GetGitHubJobLogsClient = (token: string) => GitHubWorkflowJobLogsClient;
 
 export interface GitHubJsonTransport {
   getJson(url: string, headers: Record<string, string>): Promise<unknown>;
@@ -240,6 +241,28 @@ export function createGitHubChecksFetcher(
   const client = getOctokit(token);
 
   return (context) => fetchGitHubChecks(context, client);
+}
+
+export function createGitHubChecksWithLogsFetcher(
+  token: string,
+  getChecksClient: GetOctokit,
+  getJobLogsClient: GetGitHubJobLogsClient
+): GitHubChecksFetcher {
+  const checksClient = getChecksClient(token);
+  const jobLogsClient = getJobLogsClient(token);
+
+  return async (context) => {
+    const checks = await fetchGitHubChecks(context, checksClient);
+
+    return attachWorkflowJobLogs(
+      {
+        owner: context.owner,
+        repo: context.repo
+      },
+      checks,
+      jobLogsClient
+    );
+  };
 }
 
 export function createGitHubJobLogsClient(
