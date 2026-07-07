@@ -74,6 +74,12 @@ export async function runAction(
 
   const eventPath = runtime.getEnv?.("GITHUB_EVENT_PATH");
   if (eventPath) {
+    const eventName = runtime.getEnv?.("GITHUB_EVENT_NAME");
+    if (eventName && eventName !== "pull_request") {
+      core.info("Skipping PR Check Doctor because this is not a pull_request event.");
+      return;
+    }
+
     const context = parsePullRequestEvent(JSON.parse(await runtime.readFile(eventPath)));
     core.info(
       `Loaded PR context ${context.owner}/${context.repo}#${context.pullNumber} head=${context.headSha}`

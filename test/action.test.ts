@@ -87,6 +87,44 @@ checks:
     );
   });
 
+  it("skips non pull_request event payloads", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        fetchChecks: async () => {
+          throw new Error("non-PR events should not fetch checks");
+        },
+        getEnv: (name) => {
+          if (name === "GITHUB_EVENT_NAME") {
+            return "push";
+          }
+
+          return name === "GITHUB_EVENT_PATH" ? "event.json" : undefined;
+        },
+        readFile: async () =>
+          JSON.stringify({
+            ref: "refs/heads/main",
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            }
+          })
+      }
+    );
+
+    expect(messages.join("\n")).toContain(
+      "Skipping PR Check Doctor because this is not a pull_request event."
+    );
+  });
+
   it("renders a triage comment from collected GitHub checks", async () => {
     const messages: string[] = [];
 
