@@ -65,6 +65,10 @@ export type GitHubChecksClient = GitHubCheckRunsClient &
   GitHubWorkflowRunsClient &
   GitHubWorkflowJobsClient;
 
+export type GitHubChecksFetcher = (context: PullRequestContext) => Promise<NormalizedCheck[]>;
+
+export type GetOctokit = (token: string) => GitHubChecksClient;
+
 export interface WorkflowRunContext {
   owner: string;
   repo: string;
@@ -133,4 +137,13 @@ export async function fetchGitHubChecks(
   );
 
   return [...checkRuns, ...workflowJobs.flat()];
+}
+
+export function createGitHubChecksFetcher(
+  token: string,
+  getOctokit: GetOctokit
+): GitHubChecksFetcher {
+  const client = getOctokit(token);
+
+  return (context) => fetchGitHubChecks(context, client);
 }
