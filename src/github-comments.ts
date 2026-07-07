@@ -107,12 +107,14 @@ export async function upsertTriageComment(
   body: string,
   client: GitHubCommentsClient
 ): Promise<void> {
+  // Pull request comments are issue comments in GitHub's API.
   const comments = await client.request("GET /repos/{owner}/{repo}/issues/{issue_number}/comments", {
     owner: context.owner,
     repo: context.repo,
     issue_number: context.pullNumber,
     per_page: 100
   });
+  // The hidden marker lets the action keep one stable comment instead of posting a new one per run.
   const existingComment = comments.data.find((comment) => comment.body?.includes(commentMarker));
 
   if (existingComment) {
