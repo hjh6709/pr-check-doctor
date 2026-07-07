@@ -19,7 +19,7 @@ GitHub Marketplace publishing expects a public action repository with one root a
 - `action.yml` has a stable `name`, `description`, `runs`, and `branding`.
 - `LICENSE`, `package.json`, and `package-lock.json` all declare Apache-2.0.
 - The README explains installation, permissions, scheduling after other jobs, configuration, and security behavior.
-- A real pull request has been tested with failed checks and the generated doctor comment is acceptable.
+- A real pull request has passed `docs/manual-verification.md`.
 
 ## Release flow
 
