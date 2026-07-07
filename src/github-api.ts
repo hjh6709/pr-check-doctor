@@ -373,9 +373,15 @@ async function fetchMergedJsonPages(
   transport: GitHubJsonTransport
 ): Promise<unknown> {
   const pages: unknown[] = [];
+  const seenUrls = new Set<string>();
   let nextUrl: string | undefined = url;
 
   while (nextUrl) {
+    if (seenUrls.has(nextUrl)) {
+      throw new Error(`GitHub API pagination loop detected at ${nextUrl}`);
+    }
+
+    seenUrls.add(nextUrl);
     const page = normalizeJsonPage(await transport.getJson(nextUrl, headers));
     pages.push(page.data);
     nextUrl = page.nextUrl;
