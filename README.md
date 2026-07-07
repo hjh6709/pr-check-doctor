@@ -73,6 +73,8 @@ checks:
 
 Check rule keys are matched as case-insensitive substrings against check names.
 
+See `docs/configuration.md` for the full configuration reference.
+
 ## Inputs
 
 | Input | Required | Default | Description |
