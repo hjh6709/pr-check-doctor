@@ -3,6 +3,7 @@ import {
   attachWorkflowJobLogs,
   createGitHubChecksClient,
   createGitHubChecksFetcher,
+  createGitHubChecksWithLogsFetcher,
   createGitHubJobLogsClient,
   fetchCheckRuns,
   fetchGitHubChecks,
@@ -412,6 +413,78 @@ describe("createGitHubChecksFetcher", () => {
         name: "test",
         conclusion: "failure",
         status: "completed"
+      }
+    ]);
+  });
+});
+
+describe("createGitHubChecksWithLogsFetcher", () => {
+  it("creates a token-backed GitHub checks fetcher that attaches job logs", async () => {
+    const tokens: string[] = [];
+    const fetchChecks = createGitHubChecksWithLogsFetcher(
+      "github-token",
+      (token) => {
+        tokens.push(`checks:${token}`);
+
+        return {
+          request: async (route) => {
+            if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+              return {
+                data: {
+                  check_runs: []
+                }
+              };
+            }
+
+            if (route === "GET /repos/{owner}/{repo}/actions/runs") {
+              return {
+                data: {
+                  workflow_runs: [{ id: 123 }]
+                }
+              };
+            }
+
+            return {
+              data: {
+                jobs: [
+                  {
+                    id: 12345,
+                    name: "test",
+                    conclusion: "failure",
+                    status: "completed"
+                  }
+                ]
+              }
+            };
+          }
+        } as GitHubChecksClient;
+      },
+      (token) => {
+        tokens.push(`logs:${token}`);
+
+        return {
+          request: async () => ({
+            data: "Error: test failed"
+          })
+        };
+      }
+    );
+
+    const checks = await fetchChecks({
+      owner: "octo-org",
+      repo: "pr-check-doctor",
+      pullNumber: 42,
+      headSha: "abc123"
+    });
+
+    expect(tokens).toEqual(["checks:github-token", "logs:github-token"]);
+    expect(checks).toEqual([
+      {
+        jobId: 12345,
+        name: "test",
+        conclusion: "failure",
+        status: "completed",
+        log: "Error: test failed"
       }
     ]);
   });
