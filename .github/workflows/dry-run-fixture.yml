@@ -15,14 +15,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Run dry-run fixture
-        run: npm run verify:dry-run
+        uses: ./
+        with:
+          github-token: ${{ github.token }}
+          dry-run: "true"
+          fixture-path: test/fixtures/dry-run.json
