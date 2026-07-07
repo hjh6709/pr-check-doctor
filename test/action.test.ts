@@ -60,8 +60,13 @@ checks:
         info: (message) => messages.push(message)
       },
       {
+        fetchChecks: async () => [],
         getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
         readFile: async (path) => {
+          if (path === ".check-doctor.yml") {
+            throw Object.assign(new Error("missing config"), { code: "ENOENT" });
+          }
+
           expect(path).toBe("event.json");
 
           return JSON.stringify({
@@ -85,6 +90,36 @@ checks:
     expect(messages.join("\n")).toContain(
       "Loaded PR context octo-org/pr-check-doctor#7 head=abc123"
     );
+  });
+
+  it("fails clearly when a pull_request event has no GitHub token", async () => {
+    await expect(
+      runAction(
+        {
+          getInput: () => "",
+          getBooleanInput: () => false,
+          info: () => undefined
+        },
+        {
+          getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+          readFile: async () =>
+            JSON.stringify({
+              number: 7,
+              repository: {
+                owner: {
+                  login: "octo-org"
+                },
+                name: "pr-check-doctor"
+              },
+              pull_request: {
+                head: {
+                  sha: "abc123"
+                }
+              }
+            })
+        }
+      )
+    ).rejects.toThrow("github-token input is required");
   });
 
   it("skips non pull_request event payloads", async () => {
