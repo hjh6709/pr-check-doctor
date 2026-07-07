@@ -44,6 +44,7 @@ export interface DoctorConfig {
 }
 
 export interface NormalizedCheck {
+  jobId?: number;
   name: string;
   workflowName?: string;
   conclusion: CheckConclusion;

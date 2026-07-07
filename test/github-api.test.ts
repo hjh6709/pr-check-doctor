@@ -149,6 +149,7 @@ describe("fetchWorkflowJobs", () => {
             data: {
               jobs: [
                 {
+                  id: 12345,
                   name: "test",
                   conclusion: "failure",
                   status: "completed",
@@ -173,6 +174,7 @@ describe("fetchWorkflowJobs", () => {
     ]);
     expect(checks).toEqual([
       {
+        jobId: 12345,
         name: "test",
         workflowName: "CI",
         conclusion: "failure",
@@ -253,6 +255,7 @@ describe("fetchGitHubChecks", () => {
           data: {
             jobs: [
               {
+                id: 12345,
                 name: "test",
                 conclusion: "failure",
                 status: "completed",
@@ -281,6 +284,7 @@ describe("fetchGitHubChecks", () => {
         status: "completed"
       },
       {
+        jobId: 12345,
         name: "test",
         workflowName: "CI",
         conclusion: "failure",
@@ -318,6 +322,7 @@ describe("createGitHubChecksFetcher", () => {
             data: {
               jobs: [
                 {
+                  id: 12345,
                   name: "test",
                   conclusion: "failure",
                   status: "completed"
@@ -339,6 +344,7 @@ describe("createGitHubChecksFetcher", () => {
     expect(tokens).toEqual(["github-token"]);
     expect(checks).toEqual([
       {
+        jobId: 12345,
         name: "test",
         conclusion: "failure",
         status: "completed"
