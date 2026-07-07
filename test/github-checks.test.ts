@@ -39,12 +39,14 @@ describe("mapWorkflowJob", () => {
   it("maps a GitHub workflow job into a normalized check", () => {
     expect(
       mapWorkflowJob({
+        id: 123,
         name: "build",
         conclusion: "failure",
         status: "completed",
         workflow_name: "CI"
       })
     ).toEqual({
+      jobId: 123,
       name: "build",
       workflowName: "CI",
       conclusion: "failure",
@@ -55,12 +57,14 @@ describe("mapWorkflowJob", () => {
   it("omits workflow name and uses unknown for unexpected values", () => {
     expect(
       mapWorkflowJob({
+        id: 456,
         name: "deploy",
         conclusion: "stale",
         status: null,
         workflow_name: null
       })
     ).toEqual({
+      jobId: 456,
       name: "deploy",
       conclusion: "unknown",
       status: "unknown"
@@ -81,6 +85,7 @@ describe("normalizeGitHubChecks", () => {
         ],
         workflowJobs: [
           {
+            id: 123,
             name: "test",
             conclusion: "failure",
             status: "completed",
@@ -95,6 +100,7 @@ describe("normalizeGitHubChecks", () => {
         status: "completed"
       },
       {
+        jobId: 123,
         name: "test",
         workflowName: "CI",
         conclusion: "failure",

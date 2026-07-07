@@ -9,6 +9,7 @@ export interface GitHubCheckRunLike {
 }
 
 export interface GitHubWorkflowJobLike {
+  id?: number;
   name: string;
   conclusion: string | null;
   status: string | null;
@@ -30,6 +31,7 @@ export function mapCheckRun(checkRun: GitHubCheckRunLike): NormalizedCheck {
 
 export function mapWorkflowJob(job: GitHubWorkflowJobLike): NormalizedCheck {
   return {
+    ...(typeof job.id === "number" ? { jobId: job.id } : {}),
     name: job.name,
     ...(job.workflow_name ? { workflowName: job.workflow_name } : {}),
     conclusion: normalizeConclusion(job.conclusion),
