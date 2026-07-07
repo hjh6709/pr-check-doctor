@@ -50,6 +50,14 @@ jobs:
           github-token: ${{ github.token }}
 ```
 
+For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
+
+```yaml
+      - uses: hjh6709/pr-check-doctor@eb80a5c5785ee8a6e89cfe403bbd4e6af81e3f68 # v0.1.0
+        with:
+          github-token: ${{ github.token }}
+```
+
 ## Configuration
 
 Create `.check-doctor.yml` to map check names to categories and local reproduction commands.
@@ -102,7 +110,7 @@ See `docs/security.md` for security notes on token permissions, log excerpts, re
 
 ## Status
 
-PR Check Doctor is preparing for its first Marketplace release. Before publishing, the release checklist and manual PR verification must pass:
+PR Check Doctor is preparing for Marketplace publication. Before publishing, the release checklist and manual PR verification must pass:
 
 - `docs/release-checklist.md`
 - `docs/manual-verification.md`

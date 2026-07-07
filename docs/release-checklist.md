@@ -23,12 +23,14 @@ GitHub Marketplace publishing expects a public action repository with one root a
 
 ## Release flow
 
-Use a SemVer tag for the first public release.
+Use a SemVer tag for each public release.
 
 1. Verify the release candidate gate on `main`.
-2. Create a `v0.1.0` GitHub release from the final commit.
+2. Create a GitHub release from the final commit.
 3. Select "Publish this Action to the GitHub Marketplace" in the release form.
 4. Choose a Marketplace category that matches CI or code quality tooling.
 5. Confirm the release page renders the action metadata without warnings.
+
+`v0.1.0` was used as the initial release tag. If Marketplace publication happens after README or security guidance changes, publish the next SemVer patch tag.
 
 Do not publish a release while README or real PR verification is still incomplete.
