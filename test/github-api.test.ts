@@ -39,7 +39,7 @@ describe("createGitHubChecksClient", () => {
 
     expect(requests).toEqual([
       {
-        url: "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/check-runs",
+        url: "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/check-runs?per_page=100",
         headers: expect.objectContaining({
           accept: "application/vnd.github+json",
           authorization: "Bearer github-token",
@@ -168,7 +168,7 @@ describe("attachWorkflowJobLogs", () => {
 
 describe("fetchCheckRuns", () => {
   it("requests check runs for the PR head SHA and normalizes them", async () => {
-    const calls: Array<{ route: string; params: Record<string, string> }> = [];
+    const calls: Array<{ route: string; params: Record<string, string | number> }> = [];
 
     const checks = await fetchCheckRuns(
       {
@@ -202,7 +202,8 @@ describe("fetchCheckRuns", () => {
         params: {
           owner: "octo-org",
           repo: "pr-check-doctor",
-          ref: "abc123"
+          ref: "abc123",
+          per_page: 100
         }
       }
     ]);
@@ -253,7 +254,8 @@ describe("fetchWorkflowJobs", () => {
         params: {
           owner: "octo-org",
           repo: "pr-check-doctor",
-          run_id: 123
+          run_id: 123,
+          per_page: 100
         }
       }
     ]);
