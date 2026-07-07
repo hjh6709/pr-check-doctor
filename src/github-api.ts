@@ -39,6 +39,7 @@ export interface GitHubCheckRunsClient {
       owner: string;
       repo: string;
       ref: string;
+      per_page: number;
     }
   ): Promise<CheckRunsResponse>;
 }
@@ -50,6 +51,7 @@ export interface GitHubWorkflowJobsClient {
       owner: string;
       repo: string;
       run_id: number;
+      per_page: number;
     }
   ): Promise<WorkflowJobsResponse>;
 }
@@ -143,7 +145,8 @@ export async function fetchCheckRuns(
   const response = await client.request("GET /repos/{owner}/{repo}/commits/{ref}/check-runs", {
     owner: context.owner,
     repo: context.repo,
-    ref: context.headSha
+    ref: context.headSha,
+    per_page: 100
   });
 
   return response.data.check_runs.map(mapCheckRun);
@@ -156,7 +159,8 @@ export async function fetchWorkflowJobs(
   const response = await client.request("GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs", {
     owner: context.owner,
     repo: context.repo,
-    run_id: context.runId
+    run_id: context.runId,
+    per_page: 100
   });
 
   return response.data.jobs.map(mapWorkflowJob);
@@ -319,13 +323,21 @@ function buildGitHubApiUrl(route: string, params: Record<string, string | number
   const repo = encodeURIComponent(String(params.repo));
 
   if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+    const query = new URLSearchParams({
+      per_page: String(params.per_page)
+    });
+
     return `${baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(
       String(params.ref)
-    )}/check-runs`;
+    )}/check-runs?${query}`;
   }
 
   if (route === "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs") {
-    return `${baseUrl}/repos/${owner}/${repo}/actions/runs/${params.run_id}/jobs`;
+    const query = new URLSearchParams({
+      per_page: String(params.per_page)
+    });
+
+    return `${baseUrl}/repos/${owner}/${repo}/actions/runs/${params.run_id}/jobs?${query}`;
   }
 
   if (route === "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs") {
