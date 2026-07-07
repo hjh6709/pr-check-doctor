@@ -45,3 +45,24 @@ jobs:
 
       - name: Verify dry-run fixture
         run: npm run verify:dry-run
+
+  doctor-smoke:
+    name: doctor smoke
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run PR Check Doctor dry-run
+        uses: ./
+        with:
+          github-token: ${{ github.token }}
+          dry-run: "true"
