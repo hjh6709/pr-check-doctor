@@ -49,4 +49,41 @@ checks:
     expect(output).toContain("password=[REDACTED]");
     expect(output).not.toContain("hunter2");
   });
+
+  it("loads pull request context from the GitHub event payload", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+        readFile: async (path) => {
+          expect(path).toBe("event.json");
+
+          return JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          });
+        }
+      }
+    );
+
+    expect(messages.join("\n")).toContain(
+      "Loaded PR context octo-org/pr-check-doctor#7 head=abc123"
+    );
+  });
 });
