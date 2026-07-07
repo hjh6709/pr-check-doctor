@@ -8,12 +8,7 @@ Before cutting a release, the `main` branch should be green and the local tree s
 
 ```bash
 npm ci
-npm audit --audit-level=moderate
-npm test
-npm run build
-npm run verify:action
-git diff --exit-code -- dist/index.cjs
-npm run verify:dry-run
+npm run verify:release
 ```
 
 ## Marketplace readiness

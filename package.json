@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:action": "npm run build:action && env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node dist/index.cjs",
-    "verify:dry-run": "env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node --import tsx src/index.ts"
+    "verify:dry-run": "env INPUT_DRY-RUN=true INPUT_FIXTURE-PATH=test/fixtures/dry-run.json node --import tsx src/index.ts",
+    "verify:release": "npm audit --audit-level=moderate && npm test && npm run build && npm run verify:action && git diff --exit-code -- dist/index.cjs && npm run verify:dry-run"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",
