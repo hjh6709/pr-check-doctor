@@ -1,5 +1,10 @@
 import { readFile as readFileFromFs } from "node:fs/promises";
 import { parseDoctorConfig } from "./config.js";
+import {
+  createGitHubChecksClient,
+  createGitHubChecksFetcher,
+  type GitHubChecksFetcher
+} from "./github-api.js";
 import { parsePullRequestEvent } from "./github-event.js";
 import { createTriageComment, createTriageCommentFromChecks } from "./triage.js";
 import type { GitHubChecksLike } from "./github-checks.js";
@@ -13,6 +18,7 @@ interface ActionCore {
 }
 
 interface Runtime {
+  createFetchChecks?(token: string): GitHubChecksFetcher;
   fetchChecks?(context: PullRequestContext): Promise<NormalizedCheck[]>;
   getEnv?(name: string): string | undefined;
   readFile(path: string): Promise<string>;
@@ -25,6 +31,7 @@ interface TriageFixture {
 }
 
 const defaultRuntime: Runtime = {
+  createFetchChecks: (token) => createGitHubChecksFetcher(token, createGitHubChecksClient),
   getEnv: (name) => process.env[name],
   readFile: (path) => readFileFromFs(path, "utf8")
 };
@@ -56,9 +63,10 @@ export async function runAction(
       `Loaded PR context ${context.owner}/${context.repo}#${context.pullNumber} head=${context.headSha}`
     );
 
-    if (runtime.fetchChecks) {
+    const fetchChecks = runtime.fetchChecks ?? createTokenFetchChecks(core, runtime);
+    if (fetchChecks) {
       const configText = await readOptionalConfig(configPath, runtime);
-      const checks = await runtime.fetchChecks(context);
+      const checks = await fetchChecks(context);
       core.info(
         createTriageCommentFromChecks({
           config: parseDoctorConfig(configText),
@@ -71,6 +79,19 @@ export async function runAction(
 
   core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);
   core.info("GitHub check collection and PR comment upsert will be wired in the adapter phase.");
+}
+
+function createTokenFetchChecks(
+  core: ActionCore,
+  runtime: Runtime
+): GitHubChecksFetcher | undefined {
+  const token = core.getInput("github-token");
+
+  if (!token || !runtime.createFetchChecks) {
+    return undefined;
+  }
+
+  return runtime.createFetchChecks(token);
 }
 
 async function readOptionalConfig(configPath: string, runtime: Runtime): Promise<string> {
