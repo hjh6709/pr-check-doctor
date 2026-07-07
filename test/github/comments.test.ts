@@ -3,7 +3,7 @@ import {
   createGitHubCommentsClient,
   upsertTriageComment,
   type GitHubCommentsClient
-} from "../src/github-comments.js";
+} from "../../src/github/comments.js";
 
 describe("createGitHubCommentsClient", () => {
   it("creates a token-backed REST client for PR comments", async () => {

@@ -5,16 +5,16 @@ import {
   createGitHubChecksWithLogsFetcher,
   createGitHubJobLogsClient,
   type GitHubChecksFetcher
-} from "./github-api.js";
+} from "./github/api.js";
 import {
   createGitHubCommentsClient,
   upsertTriageComment,
   type GitHubCommentsClient
-} from "./github-comments.js";
-import { parsePullRequestEvent } from "./github-event.js";
+} from "./github/comments.js";
+import { parsePullRequestEvent } from "./github/event.js";
 import { createTriageComment, createTriageCommentFromChecks } from "./triage.js";
-import type { GitHubChecksLike } from "./github-checks.js";
-import type { PullRequestContext } from "./github-event.js";
+import type { GitHubChecksLike } from "./github/checks.js";
+import type { PullRequestContext } from "./github/event.js";
 import type { NormalizedCheck } from "./types.js";
 
 interface ActionCore {

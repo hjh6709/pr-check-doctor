@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePullRequestEvent } from "../src/github-event.js";
+import { parsePullRequestEvent } from "../../src/github/event.js";
 
 describe("parsePullRequestEvent", () => {
   it("extracts PR context from a pull_request event payload", () => {

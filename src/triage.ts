@@ -1,6 +1,6 @@
 import { analyzeChecks } from "./analyze.js";
 import { renderComment } from "./comment.js";
-import { normalizeGitHubChecks, type GitHubChecksLike } from "./github-checks.js";
+import { normalizeGitHubChecks, type GitHubChecksLike } from "./github/checks.js";
 import type { DoctorConfig, NormalizedCheck } from "./types.js";
 
 export interface TriageCommentInput {

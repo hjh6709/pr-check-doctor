@@ -4,10 +4,10 @@ import {
   deduplicateNormalizedChecks,
   type GitHubCheckRunLike,
   type GitHubWorkflowJobLike
-} from "./github-checks.js";
-import { selectTriageCandidates } from "./checks.js";
-import type { PullRequestContext } from "./github-event.js";
-import type { NormalizedCheck } from "./types.js";
+} from "./checks.js";
+import { selectTriageCandidates } from "../checks.js";
+import type { PullRequestContext } from "./event.js";
+import type { NormalizedCheck } from "../types.js";
 
 interface CheckRunsResponse {
   data: {
