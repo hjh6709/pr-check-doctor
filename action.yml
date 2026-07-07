@@ -1,6 +1,9 @@
 name: PR Check Doctor
 description: Turn failed GitHub PR checks into one actionable comment.
 author: pr-check-doctor
+branding:
+  icon: git-pull-request
+  color: blue
 inputs:
   github-token:
     description: GitHub token used to read checks and write PR comments.
