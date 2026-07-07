@@ -56,7 +56,19 @@ MVP는 다음 흐름을 제공한다.
 - `WARN`: non-blocking 또는 참고용 이슈만 있다.
 - `BLOCK`: merge를 막아야 하는 실패가 하나 이상 있다.
 
-기본값은 test, lint, build, vulnerability, infra validation, commit policy, cancelled, timeout을 blocking으로 본다.
+기본값은 다음 category를 blocking으로 본다.
+
+- `test_failure`
+- `race_detected`
+- `lint_failure`
+- `format_drift`
+- `dependency_drift`
+- `build_failure`
+- `vulnerability`
+- `infra_validation`
+- `commit_policy`
+- `cancelled`
+- `timeout`
 
 ## 설정 파일
 
