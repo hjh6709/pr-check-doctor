@@ -20,6 +20,7 @@ const likelyCauses: Record<FailureCategory, string> = {
 
 export function classifyCheck(check: NormalizedCheck, config: DoctorConfig): ClassifiedIssue {
   const match = findMatchingCheckRule(check.name, config);
+  // Repository config wins over built-in heuristics because local check names carry project context.
   const category = match?.rule.category ?? classifyByBuiltInPatterns(check);
   const snippet = check.log ? extractLogSnippet(check.log) : undefined;
   const blocksMerge = match?.rule.blocks_merge ?? config.verdict.block_on.includes(category);
@@ -47,6 +48,7 @@ function classifyByBuiltInPatterns(check: NormalizedCheck): FailureCategory {
 
   const haystack = `${check.workflowName ?? ""}\n${check.name}\n${check.log ?? ""}`.toLowerCase();
 
+  // Order matters: specific signals should be classified before broad words such as "lint" or "build".
   if (haystack.includes("warning: data race")) {
     return "race_detected";
   }

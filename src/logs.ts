@@ -26,6 +26,7 @@ export function redactSecrets(log: string): string {
 export function extractLogSnippet(log: string, options: SnippetOptions = {}): LogSnippet {
   const maxLines = options.maxLines ?? 20;
   const maxChars = options.maxChars ?? 4000;
+  // Redact before selecting snippets so secrets cannot survive because surrounding lines were trimmed.
   const redactedLog = redactSecrets(log);
   const lines = redactedLog.split(/\r?\n/);
   const signalIndexes = lines

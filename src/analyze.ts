@@ -9,6 +9,7 @@ export function analyzeChecks(checks: NormalizedCheck[], config: DoctorConfig): 
   return {
     verdict: calculateVerdict(issues),
     issues,
+    // Pending checks are not failures yet, but the comment should make incomplete triage explicit.
     warnings: createWarnings(checks)
   };
 }
