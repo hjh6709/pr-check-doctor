@@ -30,7 +30,15 @@ Use a SemVer tag for each public release.
 3. Select "Publish this Action to the GitHub Marketplace" in the release form.
 4. Choose a Marketplace category that matches CI or code quality tooling.
 5. Confirm the release page renders the action metadata without warnings.
+6. Move the floating major tag to the new release commit so `@v0` usage examples keep working without a README edit:
+
+   ```bash
+   git tag -f v0 <new-semver-tag>
+   git push origin v0 --force
+   ```
 
 `v0.1.0` was used as the initial release tag. If Marketplace publication happens after README or security guidance changes, publish the next SemVer patch tag.
+
+The README pins its basic usage example to the floating `v0` tag and its SHA-pin example to the exact commit of the latest SemVer tag. Update the SHA-pin example when it drifts from the latest release.
 
 Do not publish a release while README or real PR verification is still incomplete.
