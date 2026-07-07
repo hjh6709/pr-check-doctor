@@ -41,4 +41,6 @@ Before enabling the action on sensitive repositories, run `dry-run: "true"` and 
 
 ## Forks
 
-Be careful when running on pull requests from forks. GitHub token permissions and secret availability differ for forked pull requests, and comment-writing permissions may be restricted by repository settings.
+A `pull_request`-triggered workflow only gets a read-only `GITHUB_TOKEN` on pull requests from forks, so `pull-requests: write` fails there — this is a GitHub Actions restriction, not something PR Check Doctor can work around from inside a `pull_request` workflow.
+
+To support fork PRs, use a `workflow_run`-triggered second workflow instead of `pull_request_target`. `workflow_run` runs in the base repository's context (so it gets a write-capable token) without ever checking out or executing the fork's code — PR Check Doctor only reads already-computed check results via the API. `pull_request_target` can also get a write-capable token on fork PRs, but it requires the workflow author to independently guarantee the job never checks out and runs fork content; `workflow_run` avoids that risk by construction, which is why it's the pattern documented here. See the README's "Fork Pull Requests" section for the exact two-workflow setup.
