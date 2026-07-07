@@ -57,10 +57,11 @@ export async function runAction(
     );
 
     if (runtime.fetchChecks) {
+      const configText = await readOptionalConfig(configPath, runtime);
       const checks = await runtime.fetchChecks(context);
       core.info(
         createTriageCommentFromChecks({
-          config: parseDoctorConfig(""),
+          config: parseDoctorConfig(configText),
           checks
         })
       );
@@ -70,4 +71,25 @@ export async function runAction(
 
   core.info(`PR Check Doctor core is ready. config-path=${configPath} dry-run=${dryRun}`);
   core.info("GitHub check collection and PR comment upsert will be wired in the adapter phase.");
+}
+
+async function readOptionalConfig(configPath: string, runtime: Runtime): Promise<string> {
+  try {
+    return await runtime.readFile(configPath);
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return "";
+    }
+
+    throw error;
+  }
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
 }
