@@ -45,15 +45,15 @@ jobs:
     if: ${{ always() }}
     steps:
       - uses: actions/checkout@v4
-      - uses: hjh6709/pr-check-doctor@v0.1.1
+      - uses: hjh6709/pr-check-doctor@v0
         with:
           github-token: ${{ github.token }}
 ```
 
-For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
+`v0` tracks the latest `v0.x.y` release, so it picks up patch and minor updates automatically. For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@c0523191042e527689718c966a19ed03d375dfcc # v0.1.1
+      - uses: hjh6709/pr-check-doctor@8d9f2d28aff26c3661e7de37d49ba546217a1c2b # v0.1.2
         with:
           github-token: ${{ github.token }}
 ```
@@ -110,4 +110,4 @@ See `docs/security.md` for security notes on token permissions, log excerpts, re
 
 ## Status
 
-PR Check Doctor is published on the GitHub Marketplace as of `v0.1.1`. See `docs/release-checklist.md` for the process used to cut new releases.
+PR Check Doctor is published on the GitHub Marketplace as of `v0.1.2`. See `docs/release-checklist.md` for the process used to cut new releases.
