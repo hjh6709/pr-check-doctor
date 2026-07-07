@@ -48,6 +48,47 @@ describe("createGitHubChecksClient", () => {
       }
     ]);
   });
+
+  it("follows GitHub pagination links for JSON API routes", async () => {
+    const requests: string[] = [];
+    const nextUrl = "https://api.github.com/repos/octo-org/pr-check-doctor/check-runs?page=2";
+    const client = createGitHubChecksClient("github-token", {
+      getJson: async (url) => {
+        requests.push(url);
+
+        if (url === nextUrl) {
+          return {
+            data: {
+              check_runs: [{ name: "test", conclusion: "failure", status: "completed" }]
+            }
+          };
+        }
+
+        return {
+          data: {
+            check_runs: [{ name: "lint", conclusion: "success", status: "completed" }]
+          },
+          nextUrl
+        };
+      }
+    });
+
+    const checks = await fetchCheckRuns(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        pullNumber: 42,
+        headSha: "abc123"
+      },
+      client
+    );
+
+    expect(requests).toEqual([
+      "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/check-runs?per_page=100",
+      nextUrl
+    ]);
+    expect(checks.map((check) => check.name)).toEqual(["lint", "test"]);
+  });
 });
 
 describe("createGitHubJobLogsClient", () => {
