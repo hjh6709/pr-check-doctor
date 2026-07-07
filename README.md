@@ -45,7 +45,7 @@ jobs:
     if: ${{ always() }}
     steps:
       - uses: actions/checkout@v4
-      - uses: hjh6709/pr-check-doctor@v0.1.0
+      - uses: hjh6709/pr-check-doctor@v0.1.1
         with:
           github-token: ${{ github.token }}
 ```
@@ -53,7 +53,7 @@ jobs:
 For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@eb80a5c5785ee8a6e89cfe403bbd4e6af81e3f68 # v0.1.0
+      - uses: hjh6709/pr-check-doctor@c0523191042e527689718c966a19ed03d375dfcc # v0.1.1
         with:
           github-token: ${{ github.token }}
 ```
@@ -110,7 +110,4 @@ See `docs/security.md` for security notes on token permissions, log excerpts, re
 
 ## Status
 
-PR Check Doctor is preparing for Marketplace publication. Before publishing, the release checklist and manual PR verification must pass:
-
-- `docs/release-checklist.md`
-- `docs/manual-verification.md`
+PR Check Doctor is published on the GitHub Marketplace as of `v0.1.1`. See `docs/release-checklist.md` for the process used to cut new releases.
