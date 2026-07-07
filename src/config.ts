@@ -88,6 +88,7 @@ function parseYaml(configText: string): RawConfig {
 
 function parseBlockOn(value: unknown): FailureCategory[] {
   if (!Array.isArray(value)) {
+    // Missing or invalid verdict config falls back to the conservative default blocking set.
     return [...defaultConfig.verdict.block_on];
   }
 
@@ -103,6 +104,7 @@ function parseChecks(value: unknown): Record<string, CheckRule> {
 
   for (const [pattern, rawRule] of Object.entries(value)) {
     if (!isRecord(rawRule)) {
+      // Ignore malformed entries instead of failing the whole action on one bad check rule.
       continue;
     }
 

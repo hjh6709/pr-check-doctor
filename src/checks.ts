@@ -9,5 +9,6 @@ const triageConclusions = new Set<CheckConclusion>([
 ]);
 
 export function selectTriageCandidates(checks: NormalizedCheck[]): NormalizedCheck[] {
+  // Successful, skipped, and still-running checks should not become failure issues.
   return checks.filter((check) => triageConclusions.has(check.conclusion));
 }

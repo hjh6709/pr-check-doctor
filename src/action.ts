@@ -61,6 +61,7 @@ export async function runAction(
   const fixturePath = core.getInput("fixture-path");
 
   if (dryRun && fixturePath) {
+    // Fixture mode keeps the render pipeline testable without calling GitHub.
     const fixture = JSON.parse(await runtime.readFile(fixturePath)) as TriageFixture;
     const markdown = createTriageComment({
       config: parseDoctorConfig(fixture.config ?? ""),
@@ -76,6 +77,7 @@ export async function runAction(
   if (eventPath) {
     const eventName = runtime.getEnv?.("GITHUB_EVENT_NAME");
     if (eventName && eventName !== "pull_request") {
+      // Push and manual events can run repository CI, but they do not have a PR comment target.
       core.info("Skipping PR Check Doctor because this is not a pull_request event.");
       return;
     }
@@ -87,6 +89,7 @@ export async function runAction(
 
     const fetchChecks = runtime.fetchChecks ?? createTokenFetchChecks(core, runtime);
     if (!fetchChecks) {
+      // On pull_request events, silently skipping without a token would hide a broken setup.
       throw new Error("github-token input is required to read pull request checks.");
     }
 
