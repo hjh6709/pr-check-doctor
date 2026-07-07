@@ -130,6 +130,12 @@ export interface WorkflowJobContext {
   jobId: number;
 }
 
+interface AttachWorkflowJobLogsOptions {
+  maxLogChars?: number;
+}
+
+const defaultMaxAttachedLogChars = 200_000;
+
 export async function fetchCheckRuns(
   context: PullRequestContext,
   client: GitHubCheckRunsClient
@@ -186,8 +192,10 @@ export async function fetchWorkflowJobLog(
 export async function attachWorkflowJobLogs(
   context: Omit<WorkflowJobContext, "jobId">,
   checks: NormalizedCheck[],
-  client: GitHubWorkflowJobLogsClient
+  client: GitHubWorkflowJobLogsClient,
+  options: AttachWorkflowJobLogsOptions = {}
 ): Promise<NormalizedCheck[]> {
+  const maxLogChars = options.maxLogChars ?? defaultMaxAttachedLogChars;
   const triageJobIds = new Set(
     selectTriageCandidates(checks)
       .map((check) => check.jobId)
@@ -202,7 +210,7 @@ export async function attachWorkflowJobLogs(
 
       try {
         const log = await fetchWorkflowJobLog({ ...context, jobId: check.jobId }, client);
-        return { ...check, log };
+        return { ...check, log: log.slice(0, maxLogChars) };
       } catch {
         return check;
       }
