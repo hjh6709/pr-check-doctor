@@ -34,23 +34,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit dependencies
-        run: npm audit --audit-level=moderate
-
-      - name: Run tests
-        run: npm test
-
-      - name: Typecheck
-        run: npm run build
-
-      - name: Verify action bundle
-        run: npm run verify:action
-
-      - name: Check committed action bundle
-        run: git diff --exit-code -- dist/index.cjs
-
-      - name: Verify dry-run fixture
-        run: npm run verify:dry-run
+      - name: Verify release candidate
+        run: npm run verify:release
 
   doctor-smoke:
     name: doctor smoke
