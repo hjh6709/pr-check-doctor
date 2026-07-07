@@ -69,6 +69,22 @@ export type GitHubChecksFetcher = (context: PullRequestContext) => Promise<Norma
 
 export type GetOctokit = (token: string) => GitHubChecksClient;
 
+export interface GitHubJsonTransport {
+  getJson(url: string, headers: Record<string, string>): Promise<unknown>;
+}
+
+const defaultGitHubTransport: GitHubJsonTransport = {
+  getJson: async (url, headers) => {
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+};
+
 export interface WorkflowRunContext {
   owner: string;
   repo: string;
@@ -146,4 +162,51 @@ export function createGitHubChecksFetcher(
   const client = getOctokit(token);
 
   return (context) => fetchGitHubChecks(context, client);
+}
+
+export function createGitHubChecksClient(
+  token: string,
+  transport: GitHubJsonTransport = defaultGitHubTransport
+): GitHubChecksClient {
+  const request = async (route: string, params: Record<string, string | number>) => {
+    const data = await transport.getJson(buildGitHubApiUrl(route, params), {
+      accept: "application/vnd.github+json",
+      authorization: `Bearer ${token}`,
+      "user-agent": "pr-check-doctor",
+      "x-github-api-version": "2022-11-28"
+    });
+
+    return { data };
+  };
+
+  return {
+    request: request as GitHubChecksClient["request"]
+  };
+}
+
+function buildGitHubApiUrl(route: string, params: Record<string, string | number>): string {
+  const baseUrl = "https://api.github.com";
+  const owner = encodeURIComponent(String(params.owner));
+  const repo = encodeURIComponent(String(params.repo));
+
+  if (route === "GET /repos/{owner}/{repo}/commits/{ref}/check-runs") {
+    return `${baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(
+      String(params.ref)
+    )}/check-runs`;
+  }
+
+  if (route === "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs") {
+    return `${baseUrl}/repos/${owner}/${repo}/actions/runs/${params.run_id}/jobs`;
+  }
+
+  if (route === "GET /repos/{owner}/{repo}/actions/runs") {
+    const query = new URLSearchParams({
+      head_sha: String(params.head_sha),
+      per_page: String(params.per_page)
+    });
+
+    return `${baseUrl}/repos/${owner}/${repo}/actions/runs?${query}`;
+  }
+
+  throw new Error(`Unsupported GitHub API route: ${route}`);
 }
