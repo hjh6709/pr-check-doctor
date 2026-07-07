@@ -1,6 +1,6 @@
 import type { AnalysisResult, ClassifiedIssue } from "./types.js";
 
-const commentMarker = "<!-- pr-check-doctor -->";
+export const commentMarker = "<!-- pr-check-doctor -->";
 
 export function renderComment(result: AnalysisResult): string {
   const sections = [
