@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createGitHubChecksClient,
   createGitHubChecksFetcher,
   fetchCheckRuns,
   fetchGitHubChecks,
@@ -7,6 +8,42 @@ import {
   fetchWorkflowRunIds,
   type GitHubChecksClient
 } from "../src/github-api.js";
+
+describe("createGitHubChecksClient", () => {
+  it("creates a token-backed REST client for GitHub API routes", async () => {
+    const requests: Array<{ url: string; headers: Record<string, string> }> = [];
+    const client = createGitHubChecksClient("github-token", {
+      getJson: async (url, headers) => {
+        requests.push({ url, headers });
+
+        return {
+          check_runs: []
+        };
+      }
+    });
+
+    await fetchCheckRuns(
+      {
+        owner: "octo-org",
+        repo: "pr-check-doctor",
+        pullNumber: 42,
+        headSha: "abc123"
+      },
+      client
+    );
+
+    expect(requests).toEqual([
+      {
+        url: "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/check-runs",
+        headers: expect.objectContaining({
+          accept: "application/vnd.github+json",
+          authorization: "Bearer github-token",
+          "x-github-api-version": "2022-11-28"
+        }) as Record<string, string>
+      }
+    ]);
+  });
+});
 
 describe("fetchCheckRuns", () => {
   it("requests check runs for the PR head SHA and normalizes them", async () => {
