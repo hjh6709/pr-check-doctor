@@ -29,7 +29,25 @@ describe("analyzeChecks", () => {
 
     expect(result).toEqual({
       verdict: "PASS",
-      issues: []
+      issues: [],
+      warnings: []
     });
+  });
+
+  it("warns when checks are still running", () => {
+    const result = analyzeChecks(
+      [
+        {
+          name: "unit tests",
+          conclusion: "unknown",
+          status: "in_progress"
+        }
+      ],
+      defaultConfig
+    );
+
+    expect(result.warnings).toEqual([
+      "Some checks are still running or queued: unit tests. Run this action as the final job with `if: always()` and `needs` to avoid incomplete triage."
+    ]);
   });
 });

@@ -5,6 +5,7 @@ describe("renderComment", () => {
   it("renders a stable PR triage comment", () => {
     const markdown = renderComment({
       verdict: "BLOCK",
+      warnings: [],
       issues: [
         {
           checkName: "go-lint / go test -race (apps/api)",
@@ -28,5 +29,20 @@ describe("renderComment", () => {
     expect(markdown).toContain("race_detected");
     expect(markdown).toContain("WARNING: DATA RACE");
     expect(markdown).toContain("go test -race -cover ./...");
+  });
+
+  it("renders incomplete triage warnings", () => {
+    const markdown = renderComment({
+      verdict: "PASS",
+      warnings: [
+        "Some checks are still running or queued: unit tests. Run this action as the final job with `if: always()` and `needs` to avoid incomplete triage."
+      ],
+      issues: []
+    });
+
+    expect(markdown).toContain("### Warnings");
+    expect(markdown).toContain("Some checks are still running or queued: unit tests.");
+    expect(markdown).toContain("`if: always()`");
+    expect(markdown).toContain("`needs`");
   });
 });
