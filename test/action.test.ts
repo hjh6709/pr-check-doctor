@@ -122,7 +122,7 @@ checks:
     ).rejects.toThrow("github-token input is required");
   });
 
-  it("skips non pull_request event payloads", async () => {
+  it("skips event payloads that are not pull_request or workflow_run", async () => {
     const messages: string[] = [];
 
     await runAction(
@@ -156,7 +156,7 @@ checks:
     );
 
     expect(messages.join("\n")).toContain(
-      "Skipping PR Check Doctor because this is not a pull_request event."
+      "Skipping PR Check Doctor because this is not a pull_request or workflow_run event."
     );
   });
 
@@ -438,5 +438,173 @@ checks:
 
     expect(output).toContain("#### manual test failure");
     expect(output).not.toContain("Some checks are still running or queued");
+  });
+
+  it("resolves pull request context from a workflow_run event", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        fetchChecks: async () => [],
+        resolvePullNumberForCommit: async (context) => {
+          expect(context).toEqual({
+            owner: "octo-org",
+            repo: "pr-check-doctor",
+            headSha: "abc123",
+            isPullRequestRun: true
+          });
+
+          return 7;
+        },
+        getEnv: (name) => {
+          if (name === "GITHUB_EVENT_NAME") {
+            return "workflow_run";
+          }
+
+          return name === "GITHUB_EVENT_PATH" ? "event.json" : undefined;
+        },
+        readFile: async (path) => {
+          if (path === ".check-doctor.yml") {
+            throw Object.assign(new Error("missing config"), { code: "ENOENT" });
+          }
+
+          return JSON.stringify({
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            workflow_run: {
+              head_sha: "abc123",
+              event: "pull_request"
+            }
+          });
+        }
+      }
+    );
+
+    expect(messages.join("\n")).toContain(
+      "Loaded PR context octo-org/pr-check-doctor#7 head=abc123"
+    );
+  });
+
+  it("skips workflow_run events that were not triggered by a pull request", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        resolvePullNumberForCommit: async () => {
+          throw new Error("push-triggered workflow_run events should not resolve a pull request");
+        },
+        getEnv: (name) => {
+          if (name === "GITHUB_EVENT_NAME") {
+            return "workflow_run";
+          }
+
+          return name === "GITHUB_EVENT_PATH" ? "event.json" : undefined;
+        },
+        readFile: async () =>
+          JSON.stringify({
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            workflow_run: {
+              head_sha: "abc123",
+              event: "push"
+            }
+          })
+      }
+    );
+
+    expect(messages.join("\n")).toContain(
+      "Skipping PR Check Doctor because the workflow_run was not triggered by a pull_request."
+    );
+  });
+
+  it("skips workflow_run events with no associated open pull request", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: () => "",
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        resolvePullNumberForCommit: async () => undefined,
+        getEnv: (name) => {
+          if (name === "GITHUB_EVENT_NAME") {
+            return "workflow_run";
+          }
+
+          return name === "GITHUB_EVENT_PATH" ? "event.json" : undefined;
+        },
+        readFile: async () =>
+          JSON.stringify({
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            workflow_run: {
+              head_sha: "abc123",
+              event: "pull_request"
+            }
+          })
+      }
+    );
+
+    expect(messages.join("\n")).toContain(
+      "Skipping PR Check Doctor because no open pull request is associated with commit abc123."
+    );
+  });
+
+  it("fails clearly when a workflow_run event has no GitHub token", async () => {
+    await expect(
+      runAction(
+        {
+          getInput: () => "",
+          getBooleanInput: () => false,
+          info: () => undefined
+        },
+        {
+          getEnv: (name) => {
+            if (name === "GITHUB_EVENT_NAME") {
+              return "workflow_run";
+            }
+
+            return name === "GITHUB_EVENT_PATH" ? "event.json" : undefined;
+          },
+          readFile: async () =>
+            JSON.stringify({
+              repository: {
+                owner: {
+                  login: "octo-org"
+                },
+                name: "pr-check-doctor"
+              },
+              workflow_run: {
+                head_sha: "abc123",
+                event: "pull_request"
+              }
+            })
+        }
+      )
+    ).rejects.toThrow("github-token input is required to resolve the pull request");
   });
 });
