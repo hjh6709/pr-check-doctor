@@ -92,13 +92,23 @@ checks:
 
     await runAction(
       {
-        getInput: () => "",
+        getInput: (name) => (name === "config-path" ? ".check-doctor.yml" : ""),
         getBooleanInput: () => false,
         info: (message) => messages.push(message)
       },
       {
         getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
         readFile: async (path) => {
+          if (path === ".check-doctor.yml") {
+            return `
+checks:
+  test:
+    category: test_failure
+    local_command: npm test
+    blocks_merge: true
+`;
+          }
+
           expect(path).toBe("event.json");
 
           return JSON.stringify({
@@ -138,7 +148,56 @@ checks:
     const output = messages.join("\n");
 
     expect(output).toContain("<!-- pr-check-doctor -->");
-    expect(output).toContain("Verdict: WARN");
+    expect(output).toContain("Verdict: BLOCK");
+    expect(output).toContain("test_failure");
+    expect(output).toContain("npm test");
     expect(output).toContain("#### test");
+  });
+
+  it("uses the default config when the config file is missing", async () => {
+    const messages: string[] = [];
+
+    await runAction(
+      {
+        getInput: (name) => (name === "config-path" ? ".check-doctor.yml" : ""),
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+        readFile: async (path) => {
+          if (path === ".check-doctor.yml") {
+            throw Object.assign(new Error("missing config"), { code: "ENOENT" });
+          }
+
+          return JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          });
+        },
+        fetchChecks: async () => [
+          {
+            name: "test",
+            conclusion: "failure",
+            status: "completed"
+          }
+        ]
+      }
+    );
+
+    const output = messages.join("\n");
+
+    expect(output).toContain("<!-- pr-check-doctor -->");
+    expect(output).toContain("Verdict: WARN");
   });
 });
