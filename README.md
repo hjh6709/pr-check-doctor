@@ -98,6 +98,8 @@ permissions:
 
 `pull-requests: write` is required only when the action writes or updates the PR comment. For dry-run-only workflows, use `pull-requests: read`.
 
+See `docs/security.md` for security notes on token permissions, log excerpts, redaction, and forked pull requests.
+
 ## Status
 
 PR Check Doctor is preparing for its first Marketplace release. Before publishing, the release checklist and manual PR verification must pass:
