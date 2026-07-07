@@ -37,23 +37,34 @@ jobs:
       - name: Verify release candidate
         run: npm run verify:release
 
+  manual-verification-failure:
+    name: manual test failure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail with redaction fixture
+        run: |
+          echo "Error: test failed password=hunter2"
+          exit 1
+
   doctor-smoke:
     name: doctor smoke
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - test
+      - manual-verification-failure
     if: ${{ always() && github.event_name == 'pull_request' }}
     permissions:
       actions: read
       checks: read
       contents: read
-      pull-requests: read
+      pull-requests: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run PR Check Doctor dry-run
+      - name: Run PR Check Doctor
         uses: ./
         with:
           github-token: ${{ github.token }}
-          dry-run: "true"
