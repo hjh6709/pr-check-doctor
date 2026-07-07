@@ -5,6 +5,11 @@ import {
   createGitHubChecksFetcher,
   type GitHubChecksFetcher
 } from "./github-api.js";
+import {
+  createGitHubCommentsClient,
+  upsertTriageComment,
+  type GitHubCommentsClient
+} from "./github-comments.js";
 import { parsePullRequestEvent } from "./github-event.js";
 import { createTriageComment, createTriageCommentFromChecks } from "./triage.js";
 import type { GitHubChecksLike } from "./github-checks.js";
@@ -19,10 +24,13 @@ interface ActionCore {
 
 interface Runtime {
   createFetchChecks?(token: string): GitHubChecksFetcher;
+  createUpsertComment?(token: string): GitHubCommentUpserter;
   fetchChecks?(context: PullRequestContext): Promise<NormalizedCheck[]>;
   getEnv?(name: string): string | undefined;
   readFile(path: string): Promise<string>;
 }
+
+type GitHubCommentUpserter = (context: PullRequestContext, body: string) => Promise<void>;
 
 interface TriageFixture {
   config?: string;
@@ -32,6 +40,8 @@ interface TriageFixture {
 
 const defaultRuntime: Runtime = {
   createFetchChecks: (token) => createGitHubChecksFetcher(token, createGitHubChecksClient),
+  createUpsertComment: (token) =>
+    createGitHubCommentUpserter(createGitHubCommentsClient(token)),
   getEnv: (name) => process.env[name],
   readFile: (path) => readFileFromFs(path, "utf8")
 };
@@ -67,12 +77,23 @@ export async function runAction(
     if (fetchChecks) {
       const configText = await readOptionalConfig(configPath, runtime);
       const checks = await fetchChecks(context);
-      core.info(
-        createTriageCommentFromChecks({
-          config: parseDoctorConfig(configText),
-          checks
-        })
-      );
+      const markdown = createTriageCommentFromChecks({
+        config: parseDoctorConfig(configText),
+        checks
+      });
+
+      if (dryRun) {
+        core.info(markdown);
+        return;
+      }
+
+      const upsertComment = createTokenUpsertComment(core, runtime);
+      if (upsertComment) {
+        await upsertComment(context, markdown);
+        return;
+      }
+
+      core.info(markdown);
       return;
     }
   }
@@ -92,6 +113,23 @@ function createTokenFetchChecks(
   }
 
   return runtime.createFetchChecks(token);
+}
+
+function createTokenUpsertComment(
+  core: ActionCore,
+  runtime: Runtime
+): GitHubCommentUpserter | undefined {
+  const token = core.getInput("github-token");
+
+  if (!token || !runtime.createUpsertComment) {
+    return undefined;
+  }
+
+  return runtime.createUpsertComment(token);
+}
+
+function createGitHubCommentUpserter(client: GitHubCommentsClient): GitHubCommentUpserter {
+  return (context, body) => upsertTriageComment(context, body, client);
 }
 
 async function readOptionalConfig(configPath: string, runtime: Runtime): Promise<string> {
