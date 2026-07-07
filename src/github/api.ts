@@ -40,6 +40,10 @@ interface WorkflowJobLogResponse {
   data: string;
 }
 
+interface CommitPullsResponse {
+  data: Array<{ number: number; state: string }>;
+}
+
 export interface GitHubCheckRunsClient {
   request(
     route: "GET /repos/{owner}/{repo}/commits/{ref}/check-runs",
@@ -87,9 +91,21 @@ export interface GitHubWorkflowJobLogsClient {
   ): Promise<WorkflowJobLogResponse>;
 }
 
+export interface GitHubCommitPullsClient {
+  request(
+    route: "GET /repos/{owner}/{repo}/commits/{ref}/pulls",
+    params: {
+      owner: string;
+      repo: string;
+      ref: string;
+    }
+  ): Promise<CommitPullsResponse>;
+}
+
 export type GitHubChecksClient = GitHubCheckRunsClient &
   GitHubWorkflowRunsClient &
-  GitHubWorkflowJobsClient;
+  GitHubWorkflowJobsClient &
+  GitHubCommitPullsClient;
 
 export type GitHubChecksFetcher = (context: PullRequestContext) => Promise<NormalizedCheck[]>;
 
@@ -106,6 +122,12 @@ export interface WorkflowJobContext {
   owner: string;
   repo: string;
   jobId: number;
+}
+
+export interface CommitContext {
+  owner: string;
+  repo: string;
+  headSha: string;
 }
 
 interface AttachWorkflowJobLogsOptions {
@@ -154,6 +176,22 @@ export async function fetchWorkflowRunIds(
   });
 
   return response.data.workflow_runs.map((run) => run.id);
+}
+
+export async function fetchAssociatedPullNumber(
+  context: CommitContext,
+  client: GitHubCommitPullsClient
+): Promise<number | undefined> {
+  const response = await client.request("GET /repos/{owner}/{repo}/commits/{ref}/pulls", {
+    owner: context.owner,
+    repo: context.repo,
+    ref: context.headSha
+  });
+
+  // workflow_run.pull_requests is unreliable for forked-repo runs, so the caller resolves the
+  // PR number this way instead. A commit can be associated with more than one open PR only in
+  // unusual branch-sharing setups; picking the first open match is good enough here.
+  return response.data.find((pull) => pull.state === "open")?.number;
 }
 
 export async function fetchWorkflowJobLog(
@@ -331,6 +369,10 @@ function buildGitHubApiUrl(route: string, params: Record<string, string | number
     });
 
     return `${baseUrl}/repos/${owner}/${repo}/actions/runs?${query}`;
+  }
+
+  if (route === "GET /repos/{owner}/{repo}/commits/{ref}/pulls") {
+    return `${baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(String(params.ref))}/pulls`;
   }
 
   throw new Error(`Unsupported GitHub API route: ${route}`);
