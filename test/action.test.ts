@@ -200,4 +200,49 @@ checks:
     expect(output).toContain("<!-- pr-check-doctor -->");
     expect(output).toContain("Verdict: WARN");
   });
+
+  it("creates a checks fetcher from the GitHub token when one is not injected", async () => {
+    const messages: string[] = [];
+    const tokens: string[] = [];
+
+    await runAction(
+      {
+        getInput: (name) => (name === "github-token" ? "github-token" : ""),
+        getBooleanInput: () => false,
+        info: (message) => messages.push(message)
+      },
+      {
+        createFetchChecks: (token) => {
+          tokens.push(token);
+
+          return async () => [
+            {
+              name: "test",
+              conclusion: "failure",
+              status: "completed"
+            }
+          ];
+        },
+        getEnv: (name) => (name === "GITHUB_EVENT_PATH" ? "event.json" : undefined),
+        readFile: async () =>
+          JSON.stringify({
+            number: 7,
+            repository: {
+              owner: {
+                login: "octo-org"
+              },
+              name: "pr-check-doctor"
+            },
+            pull_request: {
+              head: {
+                sha: "abc123"
+              }
+            }
+          })
+      }
+    );
+
+    expect(tokens).toEqual(["github-token"]);
+    expect(messages.join("\n")).toContain("<!-- pr-check-doctor -->");
+  });
 });
