@@ -223,9 +223,11 @@ export async function attachWorkflowJobLogs(
       }
 
       try {
+        // Logs can be large, so attach them only to checks that may appear in triage output.
         const log = await fetchWorkflowJobLog({ ...context, jobId: check.jobId }, client);
         return { ...check, log: log.slice(0, maxLogChars) };
       } catch {
+        // A missing or expired log should not hide the check result itself.
         return check;
       }
     })
@@ -236,6 +238,7 @@ export async function fetchGitHubChecks(
   context: PullRequestContext,
   client: GitHubChecksClient
 ): Promise<NormalizedCheck[]> {
+  // Check runs and workflow jobs overlap in GitHub's UI, but each exposes details the other can miss.
   const [checkRuns, workflowRunIds] = await Promise.all([
     fetchCheckRuns(context, client),
     fetchWorkflowRunIds(context, client)
@@ -381,6 +384,7 @@ async function fetchMergedJsonPages(
       throw new Error(`GitHub API pagination loop detected at ${nextUrl}`);
     }
 
+    // GitHub list endpoints return the next page through the Link header, not the JSON body.
     seenUrls.add(nextUrl);
     const page = normalizeJsonPage(await transport.getJson(nextUrl, headers));
     pages.push(page.data);
@@ -402,6 +406,7 @@ function normalizeJsonPage(result: GitHubJsonTransportResult): GitHubJsonPage {
 }
 
 function isJsonPageEnvelope(value: unknown): value is GitHubJsonPage {
+  // Real transport wraps JSON with pagination metadata; tests may pass raw GitHub JSON directly.
   return (
     isRecord(value) &&
     "data" in value &&
@@ -418,6 +423,7 @@ function mergeJsonPages(pages: unknown[]): unknown {
     return firstPage;
   }
 
+  // Only merge the list shapes we request; unknown response shapes stay unchanged.
   for (const key of ["check_runs", "jobs", "workflow_runs"]) {
     if (Array.isArray(firstPage[key])) {
       return {
