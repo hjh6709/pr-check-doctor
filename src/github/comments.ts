@@ -1,5 +1,5 @@
-import { commentMarker } from "./comment.js";
-import type { PullRequestContext } from "./github-event.js";
+import { commentMarker } from "../comment.js";
+import type { PullRequestContext } from "./event.js";
 
 interface IssueCommentLike {
   id: number;

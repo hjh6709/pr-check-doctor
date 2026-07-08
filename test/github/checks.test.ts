@@ -4,7 +4,7 @@ import {
   mapCheckRun,
   mapWorkflowJob,
   normalizeGitHubChecks
-} from "../src/github-checks.js";
+} from "../../src/github/checks.js";
 
 describe("mapCheckRun", () => {
   it("maps a GitHub check run into a normalized check", () => {

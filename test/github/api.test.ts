@@ -12,7 +12,7 @@ import {
   fetchWorkflowRunIds,
   type GitHubChecksClient,
   type GitHubWorkflowJobLogsClient
-} from "../src/github-api.js";
+} from "../../src/github/api.js";
 
 describe("createGitHubChecksClient", () => {
   it("creates a token-backed REST client for GitHub API routes", async () => {

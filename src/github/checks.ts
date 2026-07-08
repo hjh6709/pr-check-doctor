@@ -1,4 +1,4 @@
-import type { CheckConclusion, NormalizedCheck } from "./types.js";
+import type { CheckConclusion, NormalizedCheck } from "../types.js";
 
 type CheckRunStatus = NonNullable<NormalizedCheck["status"]>;
 
