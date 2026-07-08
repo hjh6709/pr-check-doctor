@@ -160,3 +160,5 @@ If your repository only needs same-repo pull requests (no external forks), the s
 ## Status
 
 PR Check Doctor is published on the GitHub Marketplace as of `v0.1.2`. See `docs/release-checklist.md` for the process used to cut new releases.
+
+<!-- workflow_run smoke test: 2026-07-08T08:38:18Z -->
