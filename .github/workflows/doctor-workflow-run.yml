@@ -1,0 +1,27 @@
+name: Doctor Workflow Run
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  doctor:
+    name: doctor workflow_run smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run PR Check Doctor dry-run
+        uses: ./
+        with:
+          github-token: ${{ github.token }}
+          dry-run: "true"
