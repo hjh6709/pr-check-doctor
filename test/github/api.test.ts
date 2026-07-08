@@ -5,6 +5,7 @@ import {
   createGitHubChecksFetcher,
   createGitHubChecksWithLogsFetcher,
   createGitHubJobLogsClient,
+  fetchAssociatedPullNumber,
   fetchCheckRuns,
   fetchGitHubChecks,
   fetchWorkflowJobLog,
@@ -410,6 +411,12 @@ describe("fetchGitHubChecks", () => {
           };
         }
 
+        if (route === "GET /repos/{owner}/{repo}/commits/{ref}/pulls") {
+          return {
+            data: []
+          };
+        }
+
         expect(params).toMatchObject({ run_id: 123 });
 
         return {
@@ -479,6 +486,12 @@ describe("fetchGitHubChecks", () => {
           };
         }
 
+        if (route === "GET /repos/{owner}/{repo}/commits/{ref}/pulls") {
+          return {
+            data: []
+          };
+        }
+
         return {
           data: {
             jobs: [
@@ -538,6 +551,12 @@ describe("createGitHubChecksFetcher", () => {
               data: {
                 workflow_runs: [{ id: 123 }]
               }
+            };
+          }
+
+          if (route === "GET /repos/{owner}/{repo}/commits/{ref}/pulls") {
+            return {
+              data: []
             };
           }
 
@@ -602,6 +621,12 @@ describe("createGitHubChecksWithLogsFetcher", () => {
               };
             }
 
+            if (route === "GET /repos/{owner}/{repo}/commits/{ref}/pulls") {
+              return {
+                data: []
+              };
+            }
+
             return {
               data: {
                 jobs: [
@@ -645,5 +670,42 @@ describe("createGitHubChecksWithLogsFetcher", () => {
         log: "Error: test failed"
       }
     ]);
+  });
+});
+
+describe("fetchAssociatedPullNumber", () => {
+  it("returns the open pull request number associated with a commit", async () => {
+    const client = createGitHubChecksClient("github-token", {
+      getJson: async (url) => {
+        expect(url).toBe(
+          "https://api.github.com/repos/octo-org/pr-check-doctor/commits/abc123/pulls"
+        );
+
+        return [
+          { number: 5, state: "closed" },
+          { number: 7, state: "open" }
+        ];
+      }
+    });
+
+    const pullNumber = await fetchAssociatedPullNumber(
+      { owner: "octo-org", repo: "pr-check-doctor", headSha: "abc123" },
+      client
+    );
+
+    expect(pullNumber).toBe(7);
+  });
+
+  it("returns undefined when no open pull request is associated with the commit", async () => {
+    const client = createGitHubChecksClient("github-token", {
+      getJson: async () => [{ number: 5, state: "closed" }]
+    });
+
+    const pullNumber = await fetchAssociatedPullNumber(
+      { owner: "octo-org", repo: "pr-check-doctor", headSha: "abc123" },
+      client
+    );
+
+    expect(pullNumber).toBeUndefined();
   });
 });
