@@ -4,6 +4,8 @@ import {
   createGitHubChecksClient,
   createGitHubChecksWithLogsFetcher,
   createGitHubJobLogsClient,
+  fetchAssociatedPullNumber,
+  type CommitContext,
   type GitHubChecksFetcher
 } from "./github/api.js";
 import {
@@ -11,7 +13,7 @@ import {
   upsertTriageComment,
   type GitHubCommentsClient
 } from "./github/comments.js";
-import { parsePullRequestEvent } from "./github/event.js";
+import { parsePullRequestEvent, parseWorkflowRunEvent } from "./github/event.js";
 import { createTriageComment, createTriageCommentFromChecks } from "./triage.js";
 import type { GitHubChecksLike } from "./github/checks.js";
 import type { PullRequestContext } from "./github/event.js";
@@ -26,12 +28,15 @@ interface ActionCore {
 interface Runtime {
   createFetchChecks?(token: string): GitHubChecksFetcher;
   createUpsertComment?(token: string): GitHubCommentUpserter;
+  createResolvePullNumberForCommit?(token: string): ResolvePullNumberForCommit;
   fetchChecks?(context: PullRequestContext): Promise<NormalizedCheck[]>;
+  resolvePullNumberForCommit?: ResolvePullNumberForCommit;
   getEnv?(name: string): string | undefined;
   readFile(path: string): Promise<string>;
 }
 
 type GitHubCommentUpserter = (context: PullRequestContext, body: string) => Promise<void>;
+type ResolvePullNumberForCommit = (context: CommitContext) => Promise<number | undefined>;
 
 interface TriageFixture {
   config?: string;
@@ -48,6 +53,10 @@ const defaultRuntime: Runtime = {
     ),
   createUpsertComment: (token) =>
     createGitHubCommentUpserter(createGitHubCommentsClient(token)),
+  createResolvePullNumberForCommit: (token) => {
+    const client = createGitHubChecksClient(token);
+    return (context) => fetchAssociatedPullNumber(context, client);
+  },
   getEnv: (name) => process.env[name],
   readFile: (path) => readFileFromFs(path, "utf8")
 };
@@ -76,13 +85,13 @@ export async function runAction(
   const eventPath = runtime.getEnv?.("GITHUB_EVENT_PATH");
   if (eventPath) {
     const eventName = runtime.getEnv?.("GITHUB_EVENT_NAME");
-    if (eventName && eventName !== "pull_request") {
-      // Push and manual events can run repository CI, but they do not have a PR comment target.
-      core.info("Skipping PR Check Doctor because this is not a pull_request event.");
+    const payload = JSON.parse(await runtime.readFile(eventPath));
+
+    const context = await resolvePullRequestContext(eventName, payload, core, runtime);
+    if (!context) {
       return;
     }
 
-    const context = parsePullRequestEvent(JSON.parse(await runtime.readFile(eventPath)));
     core.info(
       `Loaded PR context ${context.owner}/${context.repo}#${context.pullNumber} head=${context.headSha}`
     );
@@ -121,6 +130,63 @@ export async function runAction(
   core.info("GitHub check collection and PR comment upsert will be wired in the adapter phase.");
 }
 
+async function resolvePullRequestContext(
+  eventName: string | undefined,
+  payload: unknown,
+  core: ActionCore,
+  runtime: Runtime
+): Promise<PullRequestContext | undefined> {
+  if (!eventName || eventName === "pull_request") {
+    return parsePullRequestEvent(payload);
+  }
+
+  if (eventName === "workflow_run") {
+    return resolveWorkflowRunContext(payload, core, runtime);
+  }
+
+  // Push and manual events can run repository CI, but they do not have a PR comment target.
+  core.info("Skipping PR Check Doctor because this is not a pull_request or workflow_run event.");
+  return undefined;
+}
+
+async function resolveWorkflowRunContext(
+  payload: unknown,
+  core: ActionCore,
+  runtime: Runtime
+): Promise<PullRequestContext | undefined> {
+  const workflowRun = parseWorkflowRunEvent(payload);
+
+  if (!workflowRun.isPullRequestRun) {
+    core.info(
+      "Skipping PR Check Doctor because the workflow_run was not triggered by a pull_request."
+    );
+    return undefined;
+  }
+
+  const resolvePullNumber =
+    runtime.resolvePullNumberForCommit ?? createTokenResolvePullNumber(core, runtime);
+  if (!resolvePullNumber) {
+    throw new Error(
+      "github-token input is required to resolve the pull request for a workflow_run event."
+    );
+  }
+
+  const pullNumber = await resolvePullNumber(workflowRun);
+  if (pullNumber === undefined) {
+    core.info(
+      `Skipping PR Check Doctor because no open pull request is associated with commit ${workflowRun.headSha}.`
+    );
+    return undefined;
+  }
+
+  return {
+    owner: workflowRun.owner,
+    repo: workflowRun.repo,
+    pullNumber,
+    headSha: workflowRun.headSha
+  };
+}
+
 function createTokenFetchChecks(
   core: ActionCore,
   runtime: Runtime
@@ -145,6 +211,19 @@ function createTokenUpsertComment(
   }
 
   return runtime.createUpsertComment(token);
+}
+
+function createTokenResolvePullNumber(
+  core: ActionCore,
+  runtime: Runtime
+): ResolvePullNumberForCommit | undefined {
+  const token = core.getInput("github-token");
+
+  if (!token || !runtime.createResolvePullNumberForCommit) {
+    return undefined;
+  }
+
+  return runtime.createResolvePullNumberForCommit(token);
 }
 
 function createCurrentCheckNameCandidates(runtime: Runtime): string[] {
