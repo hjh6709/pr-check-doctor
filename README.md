@@ -108,6 +108,55 @@ permissions:
 
 See `docs/security.md` for security notes on token permissions, log excerpts, redaction, and forked pull requests.
 
+## Fork Pull Requests
+
+A `pull_request`-triggered workflow gets a read-only `GITHUB_TOKEN` on pull requests from forks, so `pull-requests: write` fails there. To support fork PRs, split CI and PR Check Doctor into two workflows: keep CI on `pull_request` (safe on forks), and trigger PR Check Doctor from `workflow_run` once CI finishes. `workflow_run` runs in the base repository's context, so it gets a normal write-capable token, without ever checking out or running the fork's code.
+
+```yaml
+# .github/workflows/ci.yml — unchanged, still triggers on pull_request
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
+```
+
+```yaml
+# .github/workflows/doctor.yml — new, triggers after CI completes
+name: PR Check Doctor
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hjh6709/pr-check-doctor@v0
+        with:
+          github-token: ${{ github.token }}
+```
+
+`workflows: ["CI"]` must match the `name:` of the CI workflow. PR Check Doctor resolves the pull request from the workflow run's commit automatically; it skips runs that weren't triggered by a pull request (e.g. a direct push to `main`) or that have no associated open pull request. See `docs/security.md` for why this is safer here than `pull_request_target`.
+
+If your repository only needs same-repo pull requests (no external forks), the single-workflow `pull_request` setup in "Basic Usage" above is simpler and still fully supported.
+
 ## Status
 
 PR Check Doctor is published on the GitHub Marketplace as of `v0.1.2`. See `docs/release-checklist.md` for the process used to cut new releases.
