@@ -79,7 +79,7 @@ checks:
     blocks_merge: true
 ```
 
-Check rule keys are matched as case-insensitive substrings against check names.
+Check rule keys are matched as case-insensitive substrings against check names. Use `*` as a wildcard to match matrix job variants with one rule, e.g. `"test (*)"` matches `test (ubuntu-latest, 18)`, `test (windows-latest, 20)`, and so on.
 
 See `docs/configuration.md` for the full configuration reference.
 

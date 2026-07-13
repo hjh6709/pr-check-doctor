@@ -48,7 +48,17 @@ Categories not in `block_on` can still appear in the comment, but they produce `
 
 ## Checks
 
-Each key under `checks` is matched as a case-insensitive substring against the check name.
+Each key under `checks` is matched as a case-insensitive substring against the check name. `*` matches any sequence of characters, which is useful for matrix jobs whose names vary by OS or version:
+
+```yaml
+checks:
+  "test (*)":
+    category: test_failure
+    local_command: npm test
+    blocks_merge: true
+```
+
+This one rule matches `test (ubuntu-latest, 18)`, `test (windows-latest, 20)`, and any other `test (...)` variant. Full regular expressions are not supported — only `*` as a wildcard.
 
 | Field | Required | Description |
 | --- | --- | --- |
