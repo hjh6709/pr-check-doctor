@@ -48,4 +48,55 @@ describe("findMatchingCheckRule", () => {
     expect(match?.pattern).toBe("build api");
     expect(match?.rule.local_command).toBe("docker build apps/api");
   });
+
+  it("matches matrix job variants with a wildcard pattern", () => {
+    const config = {
+      ...defaultConfig,
+      checks: {
+        "test (*)": {
+          category: "test_failure",
+          local_command: "npm test",
+          blocks_merge: true
+        }
+      }
+    } as const;
+
+    const ubuntuMatch = findMatchingCheckRule("test (ubuntu-latest, 18)", config);
+    const windowsMatch = findMatchingCheckRule("test (windows-latest, 20)", config);
+
+    expect(ubuntuMatch?.pattern).toBe("test (*)");
+    expect(windowsMatch?.pattern).toBe("test (*)");
+  });
+
+  it("does not match a wildcard pattern missing its literal parts", () => {
+    const config = {
+      ...defaultConfig,
+      checks: {
+        "test (*)": {
+          category: "test_failure",
+          local_command: "npm test",
+          blocks_merge: true
+        }
+      }
+    } as const;
+
+    expect(findMatchingCheckRule("lint", config)).toBeUndefined();
+  });
+
+  it("matches a pattern with multiple wildcard segments", () => {
+    const config = {
+      ...defaultConfig,
+      checks: {
+        "test (*, *)": {
+          category: "test_failure",
+          local_command: "npm test",
+          blocks_merge: true
+        }
+      }
+    } as const;
+
+    const match = findMatchingCheckRule("test (ubuntu-latest, 20)", config);
+
+    expect(match?.pattern).toBe("test (*, *)");
+  });
 });
