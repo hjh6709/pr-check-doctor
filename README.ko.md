@@ -1,4 +1,4 @@
-[English](README.md) | **한국어**
+[English](README.md) | **한국어** | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [Español](README.es.md) | [Français](README.fr.md)
 
 # PR Check Doctor
 
