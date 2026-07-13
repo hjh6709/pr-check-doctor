@@ -24,7 +24,7 @@ checks:
 | Field | Values | Default | Description |
 | --- | --- | --- | --- |
 | `comment.mode` | `update` | `update` | Keep one stable PR comment. |
-| `comment.language` | `en`, `ko` | `en` | Reserved for localized comment output. |
+| `comment.language` | `en`, `ko` | `en` | Language used for the rendered comment's headings, labels, and likely-cause text. Category names, verdicts, log excerpts, and commands are not translated. |
 
 ## Verdict
 
