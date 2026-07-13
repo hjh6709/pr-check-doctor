@@ -45,4 +45,46 @@ describe("classifyCheck", () => {
     expect(classifyCheck({ name: "lint", conclusion: "cancelled" }, defaultConfig).category).toBe("cancelled");
     expect(classifyCheck({ name: "build", conclusion: "timed_out" }, defaultConfig).category).toBe("timeout");
   });
+
+  it("suggests a built-in local command for a recognized tool without config", () => {
+    const issue = classifyCheck(
+      {
+        name: "lint",
+        conclusion: "failure",
+        log: "eslint found 3 problems"
+      },
+      defaultConfig
+    );
+
+    expect(issue.category).toBe("lint_failure");
+    expect(issue.localCommand).toBe("npx eslint .");
+  });
+
+  it("has no built-in local command for a generic, non-tool-specific match", () => {
+    const issue = classifyCheck(
+      {
+        name: "lint",
+        conclusion: "failure",
+        log: "ERROR: lint check failed"
+      },
+      defaultConfig
+    );
+
+    expect(issue.category).toBe("lint_failure");
+    expect(issue.localCommand).toBeUndefined();
+  });
+
+  it("suggests pytest and terraform built-in commands", () => {
+    const pytestIssue = classifyCheck(
+      { name: "pytest", conclusion: "failure", log: "1 failed, 2 passed" },
+      defaultConfig
+    );
+    const terraformIssue = classifyCheck(
+      { name: "terraform plan", conclusion: "failure", log: "Error: terraform validation failed" },
+      defaultConfig
+    );
+
+    expect(pytestIssue.localCommand).toBe("pytest");
+    expect(terraformIssue.localCommand).toBe("terraform validate");
+  });
 });
