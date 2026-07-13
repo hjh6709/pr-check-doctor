@@ -1,3 +1,5 @@
+**English** | [한국어](README.ko.md)
+
 # PR Check Doctor
 
 PR Check Doctor turns failed GitHub PR checks into one actionable pull request comment.
@@ -156,6 +158,10 @@ jobs:
 `workflows: ["CI"]` must match the `name:` of the CI workflow. PR Check Doctor resolves the pull request from the workflow run's commit automatically; it skips runs that weren't triggered by a pull request (e.g. a direct push to `main`) or that have no associated open pull request. See `docs/security.md` for why this is safer here than `pull_request_target`.
 
 If your repository only needs same-repo pull requests (no external forks), the single-workflow `pull_request` setup in "Basic Usage" above is simpler and still fully supported.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev workflow, verification steps, and PR conventions.
 
 ## Status
 
