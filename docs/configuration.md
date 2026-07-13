@@ -66,6 +66,8 @@ This one rule matches `test (ubuntu-latest, 18)`, `test (windows-latest, 20)`, a
 | `local_command` | no | Command shown in the PR comment for local reproduction. |
 | `blocks_merge` | no | Overrides the category-level blocking decision for this rule. |
 
+For checks from a recognized tool (eslint, pytest, golangci-lint, terraform, and others), PR Check Doctor suggests a sensible default reproduction command automatically — no `local_command` needed. Setting `local_command` in `.check-doctor.yml` always overrides the built-in default.
+
 ## Categories
 
 Supported categories are:
