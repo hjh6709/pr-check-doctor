@@ -32,7 +32,7 @@ export function classifyCheck(check: NormalizedCheck, config: DoctorConfig): Cla
     conclusion: check.conclusion,
     blocksMerge,
     likelyCause: likelyCauses[category],
-    localCommand: match?.rule.local_command,
+    localCommand: match?.rule.local_command ?? builtInLocalCommand(check),
     snippet
   };
 }
@@ -46,7 +46,7 @@ function classifyByBuiltInPatterns(check: NormalizedCheck): FailureCategory {
     return "timeout";
   }
 
-  const haystack = `${check.workflowName ?? ""}\n${check.name}\n${check.log ?? ""}`.toLowerCase();
+  const haystack = buildHaystack(check);
 
   // Order matters: specific signals should be classified before broad words such as "lint" or "build".
   if (haystack.includes("warning: data race")) {
@@ -90,4 +90,34 @@ function classifyByBuiltInPatterns(check: NormalizedCheck): FailureCategory {
   }
 
   return "unknown";
+}
+
+function buildHaystack(check: NormalizedCheck): string {
+  return `${check.workflowName ?? ""}\n${check.name}\n${check.log ?? ""}`.toLowerCase();
+}
+
+const builtInLocalCommands: Array<{ pattern: RegExp; command: string }> = [
+  { pattern: /\bgolangci-lint\b/, command: "golangci-lint run" },
+  { pattern: /\beslint\b/, command: "npx eslint ." },
+  { pattern: /\bruff\b/, command: "ruff check ." },
+  { pattern: /\bpre-commit\b/, command: "pre-commit run --all-files" },
+  { pattern: /\bprettier\b/, command: "npx prettier --check ." },
+  { pattern: /\bblack\b/, command: "black --check ." },
+  { pattern: /\bgofmt\b/, command: "gofmt -l ." },
+  { pattern: /\bgo mod tidy\b/, command: "go mod tidy" },
+  { pattern: /\bpnpm install\b/, command: "pnpm install" },
+  { pattern: /\bnpm install\b/, command: "npm install" },
+  { pattern: /\bdocker build\b/, command: "docker build ." },
+  { pattern: /\bterraform\b/, command: "terraform validate" },
+  { pattern: /\bgo test\b/, command: "go test ./..." },
+  { pattern: /\bpytest\b/, command: "pytest" },
+  { pattern: /\bvitest\b/, command: "npx vitest run" },
+  { pattern: /\bjest\b/, command: "npx jest" },
+  { pattern: /\btrivy\b/, command: "trivy fs ." }
+];
+
+function builtInLocalCommand(check: NormalizedCheck): string | undefined {
+  const haystack = buildHaystack(check);
+
+  return builtInLocalCommands.find(({ pattern }) => pattern.test(haystack))?.command;
 }
