@@ -1,0 +1,80 @@
+name: Release Followup
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to follow up on (for manual testing)
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  followup:
+    name: release followup
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve tag and commit sha
+        id: release
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          SHA="$(git rev-parse "refs/tags/$TAG")"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Move floating v0 tag
+        env:
+          SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          git tag -f v0 "$SHA"
+          git push origin v0 --force
+
+      - name: Update README version references
+        id: readme
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          sed -i -E "s|hjh6709/pr-check-doctor@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+|hjh6709/pr-check-doctor@${SHA} # ${TAG}|" README.md
+          sed -i -E "s|as of \`v[0-9]+\.[0-9]+\.[0-9]+\`|as of \`${TAG}\`|" README.md
+
+          if git diff --quiet -- README.md; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update follow-up PR
+        if: steps.readme.outputs.changed == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="docs/update-readme-${TAG}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH"
+          git commit -am "docs: update readme for ${TAG}"
+          git push -u origin "$BRANCH" --force
+
+          if [ "$(gh pr list --head "$BRANCH" --json number --jq 'length')" = "0" ]; then
+            gh pr create \
+              --title "docs: update readme for ${TAG}" \
+              --body "Automated follow-up for the ${TAG} release." \
+              --base main
+          fi
