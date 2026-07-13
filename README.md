@@ -53,7 +53,7 @@ jobs:
 `v0` tracks the latest `v0.x.y` release, so it picks up patch and minor updates automatically. For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@08243d146b89f6446b2bd466d98c7d87993b5e36 # v0.2.0
+      - uses: hjh6709/pr-check-doctor@ad92599d882bcba618d6c5c03853185c6202adff # v0.2.0
         with:
           github-token: ${{ github.token }}
 ```
