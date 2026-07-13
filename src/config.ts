@@ -64,7 +64,7 @@ export function findMatchingCheckRule(
   const normalizedCheckName = normalizeForMatch(checkName);
 
   for (const [pattern, rule] of Object.entries(config.checks)) {
-    if (normalizedCheckName.includes(normalizeForMatch(pattern))) {
+    if (buildMatchPattern(normalizeForMatch(pattern)).test(normalizedCheckName)) {
       return { pattern, rule };
     }
   }
@@ -130,6 +130,19 @@ function parseChecks(value: unknown): Record<string, CheckRule> {
 
 function normalizeForMatch(value: string): string {
   return value.toLowerCase().trim();
+}
+
+function buildMatchPattern(normalizedPattern: string): RegExp {
+  const escaped = normalizedPattern
+    .split("*")
+    .map(escapeRegExpLiteral)
+    .join(".*");
+
+  return new RegExp(escaped);
+}
+
+function escapeRegExpLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
