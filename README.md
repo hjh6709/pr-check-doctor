@@ -53,7 +53,7 @@ jobs:
 `v0` tracks the latest `v0.x.y` release, so it picks up patch and minor updates automatically. For security-sensitive repositories, pin the action to a full commit SHA instead of a mutable tag:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@ad92599d882bcba618d6c5c03853185c6202adff # v0.2.0
+      - uses: hjh6709/pr-check-doctor@d0f5e1c592c3afee12dc6b998fb9600d9b28237f # v0.3.0
         with:
           github-token: ${{ github.token }}
 ```
@@ -159,4 +159,4 @@ If your repository only needs same-repo pull requests (no external forks), the s
 
 ## Status
 
-PR Check Doctor is published on the GitHub Marketplace as of `v0.2.0`. See `docs/release-checklist.md` for the process used to cut new releases.
+PR Check Doctor is published on the GitHub Marketplace as of `v0.3.0`. See `docs/release-checklist.md` for the process used to cut new releases.
