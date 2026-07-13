@@ -1,21 +1,39 @@
+import { type Language } from "./i18n.js";
 import { findMatchingCheckRule } from "./config.js";
 import { extractLogSnippet } from "./logs.js";
 import type { ClassifiedIssue, DoctorConfig, FailureCategory, NormalizedCheck } from "./types.js";
 
-const likelyCauses: Record<FailureCategory, string> = {
-  test_failure: "A test command failed.",
-  race_detected: "Go race detector reported a data race.",
-  lint_failure: "A lint check reported code quality issues.",
-  format_drift: "A formatting check detected files that need formatting.",
-  dependency_drift: "Dependency files are out of sync or failed to resolve.",
-  build_failure: "A build command failed.",
-  vulnerability: "A security scan reported a vulnerability.",
-  infra_validation: "Infrastructure or configuration validation failed.",
-  commit_policy: "Commit message or PR title policy failed.",
-  external_flake: "The check appears to be affected by an external or flaky failure.",
-  cancelled: "The check was cancelled before it completed.",
-  timeout: "The check timed out.",
-  unknown: "The check failed, but PR Check Doctor could not classify the root cause yet."
+const likelyCauses: Record<Language, Record<FailureCategory, string>> = {
+  en: {
+    test_failure: "A test command failed.",
+    race_detected: "Go race detector reported a data race.",
+    lint_failure: "A lint check reported code quality issues.",
+    format_drift: "A formatting check detected files that need formatting.",
+    dependency_drift: "Dependency files are out of sync or failed to resolve.",
+    build_failure: "A build command failed.",
+    vulnerability: "A security scan reported a vulnerability.",
+    infra_validation: "Infrastructure or configuration validation failed.",
+    commit_policy: "Commit message or PR title policy failed.",
+    external_flake: "The check appears to be affected by an external or flaky failure.",
+    cancelled: "The check was cancelled before it completed.",
+    timeout: "The check timed out.",
+    unknown: "The check failed, but PR Check Doctor could not classify the root cause yet."
+  },
+  ko: {
+    test_failure: "테스트 명령이 실패했습니다.",
+    race_detected: "Go race detector가 데이터 레이스를 보고했습니다.",
+    lint_failure: "린트 검사에서 코드 품질 문제가 발견됐습니다.",
+    format_drift: "포맷 검사에서 포맷이 필요한 파일을 발견했습니다.",
+    dependency_drift: "의존성 파일이 동기화되지 않았거나 해석에 실패했습니다.",
+    build_failure: "빌드 명령이 실패했습니다.",
+    vulnerability: "보안 스캔에서 취약점이 발견됐습니다.",
+    infra_validation: "인프라 또는 설정 검증에 실패했습니다.",
+    commit_policy: "커밋 메시지 또는 PR 제목 정책을 위반했습니다.",
+    external_flake: "외부 요인이나 일시적인 문제로 인한 실패로 보입니다.",
+    cancelled: "완료되기 전에 체크가 취소됐습니다.",
+    timeout: "체크가 시간 초과됐습니다.",
+    unknown: "체크가 실패했지만 PR Check Doctor가 아직 원인을 분류하지 못했습니다."
+  }
 };
 
 export function classifyCheck(check: NormalizedCheck, config: DoctorConfig): ClassifiedIssue {
@@ -31,7 +49,7 @@ export function classifyCheck(check: NormalizedCheck, config: DoctorConfig): Cla
     category,
     conclusion: check.conclusion,
     blocksMerge,
-    likelyCause: likelyCauses[category],
+    likelyCause: likelyCauses[config.comment.language][category],
     localCommand: match?.rule.local_command ?? builtInLocalCommand(check),
     snippet
   };

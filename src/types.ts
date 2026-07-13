@@ -1,3 +1,5 @@
+import type { Language } from "./i18n.js";
+
 export type FailureCategory =
   | "test_failure"
   | "race_detected"
@@ -35,7 +37,7 @@ export interface CheckRule {
 export interface DoctorConfig {
   comment: {
     mode: "update";
-    language: "en" | "ko";
+    language: Language;
   };
   verdict: {
     block_on: FailureCategory[];
