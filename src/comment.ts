@@ -1,72 +1,90 @@
+import { translate, type Language, type Strings } from "./i18n.js";
 import type { AnalysisResult, ClassifiedIssue } from "./types.js";
 
 export const commentMarker = "<!-- pr-check-doctor -->";
 
-export function renderComment(result: AnalysisResult): string {
+export function renderComment(result: AnalysisResult, language: Language): string {
+  const strings = translate(language);
   const sections = [
     commentMarker,
     "## PR Check Doctor",
     "",
-    `Verdict: ${result.verdict}`,
+    `${strings.verdictLabel}: ${result.verdict}`,
     "",
-    renderWarnings(result.warnings),
+    renderWarnings(result.warnings, strings),
     "",
-    renderIssues(result.issues),
+    renderIssues(result.issues, strings),
     "",
-    renderNextActions(result.issues)
+    renderNextActions(result.issues, strings)
   ];
 
   return sections.filter((section) => section.length > 0).join("\n").trimEnd();
 }
 
-function renderWarnings(warnings: string[]): string {
+function renderWarnings(warnings: string[], strings: Strings): string {
   if (warnings.length === 0) {
     return "";
   }
 
-  return ["### Warnings", "", ...warnings.map((warning) => `- ${warning}`)].join("\n");
+  return [`### ${strings.warningsHeading}`, "", ...warnings.map((warning) => `- ${warning}`)].join("\n");
 }
 
-function renderIssues(issues: ClassifiedIssue[]): string {
+function renderIssues(issues: ClassifiedIssue[], strings: Strings): string {
   if (issues.length === 0) {
-    return "No failed or blocking checks were found.";
+    return strings.noFailedChecks;
   }
 
-  return ["### Failed Checks", "", ...issues.map(renderIssue)].join("\n");
+  return [
+    `### ${strings.failedChecksHeading}`,
+    "",
+    ...issues.map((issue) => renderIssue(issue, strings))
+  ].join("\n");
 }
 
-function renderIssue(issue: ClassifiedIssue): string {
+function renderIssue(issue: ClassifiedIssue, strings: Strings): string {
   const lines = [
     `#### ${issue.checkName}`,
-    `- Category: ${issue.category}`,
-    `- Impact: ${issue.blocksMerge ? "merge blocking" : "non-blocking"}`,
-    `- Likely cause: ${issue.likelyCause}`
+    `- ${strings.categoryLabel}: ${issue.category}`,
+    `- ${strings.impactLabel}: ${issue.blocksMerge ? strings.impactBlocking : strings.impactNonBlocking}`,
+    `- ${strings.likelyCauseLabel}: ${issue.likelyCause}`
   ];
 
   if (issue.snippet) {
-    lines.push("", "- Key log:", "  ```text", indentForListCodeBlock(issue.snippet.text), "  ```");
+    lines.push(
+      "",
+      `- ${strings.keyLogLabel}:`,
+      "  ```text",
+      indentForListCodeBlock(issue.snippet.text),
+      "  ```"
+    );
   }
 
   if (issue.localCommand) {
-    lines.push("", "- Reproduce locally:", "  ```bash", indentForListCodeBlock(issue.localCommand), "  ```");
+    lines.push(
+      "",
+      `- ${strings.reproduceLocallyLabel}:`,
+      "  ```bash",
+      indentForListCodeBlock(issue.localCommand),
+      "  ```"
+    );
   }
 
   return lines.join("\n");
 }
 
-function renderNextActions(issues: ClassifiedIssue[]): string {
+function renderNextActions(issues: ClassifiedIssue[], strings: Strings): string {
   if (issues.length === 0) {
-    return "### Next Actions\n\nNo action required.";
+    return `### ${strings.nextActionsHeading}\n\n${strings.noActionRequired}`;
   }
 
   const blockingIssues = issues.filter((issue) => issue.blocksMerge);
   const issueList = blockingIssues.length > 0 ? blockingIssues : issues;
 
   return [
-    "### Next Actions",
+    `### ${strings.nextActionsHeading}`,
     "",
-    ...issueList.map((issue, index) => `${index + 1}. Fix or inspect \`${issue.checkName}\`.`),
-    `${issueList.length + 1}. Re-run the affected PR checks after pushing the fix.`
+    ...issueList.map((issue, index) => `${index + 1}. ${strings.fixOrInspect(issue.checkName)}`),
+    `${issueList.length + 1}. ${strings.rerunAffectedChecks}`
   ].join("\n");
 }
 

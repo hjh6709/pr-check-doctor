@@ -87,4 +87,14 @@ describe("classifyCheck", () => {
     expect(pytestIssue.localCommand).toBe("pytest");
     expect(terraformIssue.localCommand).toBe("terraform validate");
   });
+
+  it("localizes the likely cause when comment.language is ko", () => {
+    const issue = classifyCheck(
+      { name: "go test -race (apps/api)", conclusion: "failure", log: "WARNING: DATA RACE" },
+      { ...defaultConfig, comment: { ...defaultConfig.comment, language: "ko" } }
+    );
+
+    expect(issue.category).toBe("race_detected");
+    expect(issue.likelyCause).toBe("Go race detector가 데이터 레이스를 보고했습니다.");
+  });
 });

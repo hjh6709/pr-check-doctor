@@ -29,7 +29,8 @@ export function createTriageCommentFromChecks(input: TriageChecksInput): string 
   return renderComment(
     analyzeChecks(checks, input.config, {
       ignoredWarningCheckNames: input.ignoredWarningCheckNames
-    })
+    }),
+    input.config.comment.language
   );
 }
 

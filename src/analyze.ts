@@ -1,3 +1,4 @@
+import { translate, type Language } from "./i18n.js";
 import { calculateVerdict } from "./verdict.js";
 import { selectTriageCandidates } from "./checks.js";
 import { classifyCheck } from "./classifier.js";
@@ -18,11 +19,15 @@ export function analyzeChecks(
     verdict: calculateVerdict(issues),
     issues,
     // Pending checks are not failures yet, but the comment should make incomplete triage explicit.
-    warnings: createWarnings(checks, options.ignoredWarningCheckNames ?? [])
+    warnings: createWarnings(checks, options.ignoredWarningCheckNames ?? [], config.comment.language)
   };
 }
 
-function createWarnings(checks: NormalizedCheck[], ignoredCheckNames: string[]): string[] {
+function createWarnings(
+  checks: NormalizedCheck[],
+  ignoredCheckNames: string[],
+  language: Language
+): string[] {
   const ignoredNames = new Set(ignoredCheckNames.map(normalizeCheckName));
   const incompleteCheckNames = checks
     .filter((check) => check.status === "queued" || check.status === "in_progress")
@@ -33,11 +38,7 @@ function createWarnings(checks: NormalizedCheck[], ignoredCheckNames: string[]):
     return [];
   }
 
-  return [
-    `Some checks are still running or queued: ${incompleteCheckNames.join(
-      ", "
-    )}. Run this action as the final job with \`if: always()\` and \`needs\` to avoid incomplete triage.`
-  ];
+  return [translate(language).incompleteChecksWarning(incompleteCheckNames)];
 }
 
 function normalizeCheckName(value: string): string {

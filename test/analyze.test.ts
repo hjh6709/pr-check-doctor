@@ -50,4 +50,15 @@ describe("analyzeChecks", () => {
       "Some checks are still running or queued: unit tests. Run this action as the final job with `if: always()` and `needs` to avoid incomplete triage."
     ]);
   });
+
+  it("localizes the incomplete triage warning when comment.language is ko", () => {
+    const result = analyzeChecks(
+      [{ name: "unit tests", conclusion: "unknown", status: "in_progress" }],
+      { ...defaultConfig, comment: { ...defaultConfig.comment, language: "ko" } }
+    );
+
+    expect(result.warnings).toEqual([
+      "아직 실행 중이거나 대기 중인 체크가 있습니다: unit tests. 불완전한 triage를 피하려면 이 action을 `if: always()`와 `needs`로 마지막 job에 배치하세요."
+    ]);
+  });
 });
