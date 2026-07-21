@@ -3,7 +3,7 @@ import { defaultConfig, findMatchingCheckRule, parseDoctorConfig } from "../src/
 
 describe("parseDoctorConfig", () => {
   it("returns defaults when config text is empty", () => {
-    const config = parseDoctorConfig("");
+    const { config } = parseDoctorConfig("");
 
     expect(config.comment).toEqual({ mode: "update", language: "en" });
     expect(config.verdict.block_on).toContain("test_failure");
@@ -12,7 +12,7 @@ describe("parseDoctorConfig", () => {
   });
 
   it("merges configured checks with defaults", () => {
-    const config = parseDoctorConfig(`
+    const { config } = parseDoctorConfig(`
 comment:
   language: ko
 checks:
@@ -27,6 +27,41 @@ checks:
     expect(config.comment.language).toBe("ko");
     expect(config.comment.mode).toBe("update");
     expect(config.checks["go test -race"]?.category).toBe("race_detected");
+  });
+
+  it("warns about a malformed check rule entry", () => {
+    const { warnings } = parseDoctorConfig(`
+checks:
+  test: "not a mapping"
+`);
+
+    expect(warnings).toEqual(['Ignored malformed check rule for "test".']);
+  });
+
+  it("warns about an unknown category on a check rule", () => {
+    const { config, warnings } = parseDoctorConfig(`
+checks:
+  test:
+    category: not_a_real_category
+`);
+
+    expect(config.checks.test?.category).toBeUndefined();
+    expect(warnings).toEqual([
+      'Ignored unknown category "not_a_real_category" for check rule "test".'
+    ]);
+  });
+
+  it("warns about an unknown category in verdict.block_on", () => {
+    const { warnings } = parseDoctorConfig(`
+verdict:
+  block_on:
+    - test_failure
+    - not_a_real_category
+`);
+
+    expect(warnings).toEqual([
+      'Ignored unknown category "not_a_real_category" in verdict.block_on.'
+    ]);
   });
 });
 

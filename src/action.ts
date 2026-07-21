@@ -23,6 +23,7 @@ interface ActionCore {
   getInput(name: string): string;
   getBooleanInput(name: string): boolean;
   info(message: string): void;
+  warning?(message: string): void;
 }
 
 interface Runtime {
@@ -72,8 +73,10 @@ export async function runAction(
   if (dryRun && fixturePath) {
     // Fixture mode keeps the render pipeline testable without calling GitHub.
     const fixture = JSON.parse(await runtime.readFile(fixturePath)) as TriageFixture;
+    const { config, warnings } = parseDoctorConfig(fixture.config ?? "");
+    warnings.forEach((warning) => core.warning?.(warning));
     const markdown = createTriageComment({
-      config: parseDoctorConfig(fixture.config ?? ""),
+      config,
       gitHubChecks: fixture.gitHubChecks,
       logsByCheckName: fixture.logsByCheckName
     });
@@ -103,9 +106,11 @@ export async function runAction(
     }
 
     const configText = await readOptionalConfig(configPath, runtime);
+    const { config, warnings } = parseDoctorConfig(configText);
+    warnings.forEach((warning) => core.warning?.(warning));
     const checks = await fetchChecks(context);
     const markdown = createTriageCommentFromChecks({
-      config: parseDoctorConfig(configText),
+      config,
       checks,
       // The action job is necessarily in progress while it renders the comment.
       ignoredWarningCheckNames: createCurrentCheckNameCandidates(runtime)

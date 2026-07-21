@@ -50,6 +50,31 @@ checks:
     expect(output).not.toContain("hunter2");
   });
 
+  it("warns about malformed check rules in the config", async () => {
+    const warnings: string[] = [];
+
+    await runAction(
+      {
+        getInput: (name) => (name === "fixture-path" ? "fixture.json" : ""),
+        getBooleanInput: (name) => name === "dry-run",
+        info: () => undefined,
+        warning: (message) => warnings.push(message)
+      },
+      {
+        readFile: async () =>
+          JSON.stringify({
+            config: `
+checks:
+  test: "not a mapping"
+`,
+            gitHubChecks: { checkRuns: [], workflowJobs: [] }
+          })
+      }
+    );
+
+    expect(warnings).toEqual(['Ignored malformed check rule for "test".']);
+  });
+
   it("loads pull request context from the GitHub event payload", async () => {
     const messages: string[] = [];
 
