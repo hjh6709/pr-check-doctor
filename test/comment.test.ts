@@ -50,6 +50,9 @@ describe("renderComment", () => {
     expect(markdown).toContain("Some checks are still running or queued: unit tests.");
     expect(markdown).toContain("`if: always()`");
     expect(markdown).toContain("`needs`");
+    // Failed Checks needs its own heading so "No failed checks" doesn't read as a stray
+    // line under Warnings.
+    expect(markdown).toContain("### Failed Checks\n\nNo failed or blocking checks were found.");
   });
 
   it("renders headings and labels in Korean when language is ko", () => {

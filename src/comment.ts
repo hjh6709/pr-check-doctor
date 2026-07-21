@@ -31,7 +31,7 @@ function renderWarnings(warnings: string[], strings: Strings): string {
 
 function renderIssues(issues: ClassifiedIssue[], strings: Strings): string {
   if (issues.length === 0) {
-    return strings.noFailedChecks;
+    return `### ${strings.failedChecksHeading}\n\n${strings.noFailedChecks}`;
   }
 
   return [
