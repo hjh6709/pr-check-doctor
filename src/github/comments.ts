@@ -1,4 +1,5 @@
 import { commentMarker } from "../comment.js";
+import { fetchWithRetry } from "./transport.js";
 import type { PullRequestContext } from "./event.js";
 
 interface IssueCommentLike {
@@ -57,11 +58,13 @@ export interface GitHubCommentsClient {
 
 const defaultGitHubCommentsTransport: GitHubCommentsTransport = {
   requestJson: async (method, url, headers, body) => {
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
+    const response = await fetchWithRetry(() =>
+      fetch(url, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body)
+      })
+    );
 
     if (!response.ok) {
       throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);

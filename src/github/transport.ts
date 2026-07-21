@@ -15,7 +15,7 @@ export interface GitHubTextTransport {
 
 export const defaultGitHubTransport: GitHubJsonTransport = {
   getJson: async (url, headers) => {
-    const response = await fetch(url, { headers });
+    const response = await fetchWithRetry(() => fetch(url, { headers }));
 
     if (!response.ok) {
       throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
@@ -30,7 +30,7 @@ export const defaultGitHubTransport: GitHubJsonTransport = {
 
 export const defaultGitHubTextTransport: GitHubTextTransport = {
   getText: async (url, headers) => {
-    const response = await fetch(url, { headers });
+    const response = await fetchWithRetry(() => fetch(url, { headers }));
 
     if (!response.ok) {
       throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
@@ -124,4 +124,59 @@ function parseNextLinkUrl(linkHeader: string | null): string | undefined {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const maxAttempts = 3;
+const backoffScheduleMs = [500, 1500];
+
+export async function fetchWithRetry(attempt: () => Promise<Response>): Promise<Response> {
+  let lastResponse: Response | undefined;
+  let lastNetworkError: unknown;
+
+  for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber++) {
+    try {
+      const response = await attempt();
+
+      if (response.ok || !isRetryableResponse(response)) {
+        return response;
+      }
+
+      lastResponse = response;
+    } catch (error) {
+      lastNetworkError = error;
+    }
+
+    if (attemptNumber < maxAttempts) {
+      await sleep(retryDelayMs(lastResponse, attemptNumber));
+    }
+  }
+
+  if (lastResponse) {
+    return lastResponse;
+  }
+
+  throw lastNetworkError;
+}
+
+function isRetryableResponse(response: Response): boolean {
+  if (response.status === 429 || (response.status >= 500 && response.status < 600)) {
+    return true;
+  }
+
+  // A 403 without a zeroed rate-limit header is a permission error, not a transient failure.
+  return response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0";
+}
+
+function retryDelayMs(response: Response | undefined, attemptNumber: number): number {
+  const retryAfterSeconds = Number(response?.headers.get("retry-after"));
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
+    return retryAfterSeconds * 1000;
+  }
+
+  return backoffScheduleMs[attemptNumber - 1] ?? backoffScheduleMs[backoffScheduleMs.length - 1];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
