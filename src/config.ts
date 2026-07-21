@@ -31,6 +31,11 @@ export interface MatchingCheckRule {
   rule: CheckRule;
 }
 
+export interface ParsedDoctorConfig {
+  config: DoctorConfig;
+  warnings: string[];
+}
+
 interface RawConfig {
   comment?: {
     mode?: unknown;
@@ -42,19 +47,22 @@ interface RawConfig {
   checks?: unknown;
 }
 
-export function parseDoctorConfig(configText: string): DoctorConfig {
+export function parseDoctorConfig(configText: string): ParsedDoctorConfig {
   const raw = parseYaml(configText);
+  const warnings: string[] = [];
 
-  return {
+  const config: DoctorConfig = {
     comment: {
       mode: "update",
       language: raw.comment?.language === "ko" ? "ko" : defaultConfig.comment.language
     },
     verdict: {
-      block_on: parseBlockOn(raw.verdict?.block_on)
+      block_on: parseBlockOn(raw.verdict?.block_on, warnings)
     },
-    checks: parseChecks(raw.checks)
+    checks: parseChecks(raw.checks, warnings)
   };
+
+  return { config, warnings };
 }
 
 export function findMatchingCheckRule(
@@ -86,16 +94,23 @@ function parseYaml(configText: string): RawConfig {
   return parsed as RawConfig;
 }
 
-function parseBlockOn(value: unknown): FailureCategory[] {
+function parseBlockOn(value: unknown, warnings: string[]): FailureCategory[] {
   if (!Array.isArray(value)) {
     // Missing or invalid verdict config falls back to the conservative default blocking set.
     return [...defaultConfig.verdict.block_on];
   }
 
-  return value.filter(isFailureCategory);
+  return value.filter((entry) => {
+    if (isFailureCategory(entry)) {
+      return true;
+    }
+
+    warnings.push(`Ignored unknown category "${String(entry)}" in verdict.block_on.`);
+    return false;
+  });
 }
 
-function parseChecks(value: unknown): Record<string, CheckRule> {
+function parseChecks(value: unknown, warnings: string[]): Record<string, CheckRule> {
   if (!isRecord(value)) {
     return {};
   }
@@ -105,13 +120,20 @@ function parseChecks(value: unknown): Record<string, CheckRule> {
   for (const [pattern, rawRule] of Object.entries(value)) {
     if (!isRecord(rawRule)) {
       // Ignore malformed entries instead of failing the whole action on one bad check rule.
+      warnings.push(`Ignored malformed check rule for "${pattern}".`);
       continue;
     }
 
     const rule: CheckRule = {};
 
-    if (isFailureCategory(rawRule.category)) {
-      rule.category = rawRule.category;
+    if (rawRule.category !== undefined) {
+      if (isFailureCategory(rawRule.category)) {
+        rule.category = rawRule.category;
+      } else {
+        warnings.push(
+          `Ignored unknown category "${String(rawRule.category)}" for check rule "${pattern}".`
+        );
+      }
     }
 
     if (typeof rawRule.local_command === "string") {

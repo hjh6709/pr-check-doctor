@@ -4,7 +4,7 @@ import { createTriageComment, createTriageCommentFromChecks } from "../src/triag
 
 describe("fixture triage flow", () => {
   it("renders a blocking PR comment from GitHub check fixtures", () => {
-    const config = parseDoctorConfig(`
+    const { config } = parseDoctorConfig(`
 checks:
   test:
     category: test_failure
@@ -46,7 +46,7 @@ checks:
   });
 
   it("renders a blocking PR comment from normalized checks", () => {
-    const config = parseDoctorConfig(`
+    const { config } = parseDoctorConfig(`
 checks:
   test:
     category: test_failure
