@@ -29,16 +29,16 @@ function createWarnings(
   language: Language
 ): string[] {
   const ignoredNames = new Set(ignoredCheckNames.map(normalizeCheckName));
-  const incompleteCheckNames = checks
+  const incompleteChecks = checks
     .filter((check) => check.status === "queued" || check.status === "in_progress")
     .filter((check) => !ignoredNames.has(normalizeCheckName(check.name)))
-    .map((check) => check.name);
+    .map((check) => ({ name: check.name, workflowName: check.workflowName }));
 
-  if (incompleteCheckNames.length === 0) {
+  if (incompleteChecks.length === 0) {
     return [];
   }
 
-  return [translate(language).incompleteChecksWarning(incompleteCheckNames)];
+  return [translate(language).incompleteChecksWarning(incompleteChecks)];
 }
 
 function normalizeCheckName(value: string): string {

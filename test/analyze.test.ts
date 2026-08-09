@@ -61,4 +61,44 @@ describe("analyzeChecks", () => {
       "아직 실행 중이거나 대기 중인 체크가 있습니다: unit tests. 불완전한 triage를 피하려면 이 action을 `if: always()`와 `needs`로 마지막 job에 배치하세요."
     ]);
   });
+
+  it("suggests a workflow_run setup when a pending check names its workflow", () => {
+    const result = analyzeChecks(
+      [
+        {
+          name: "CodeQL (go)",
+          workflowName: "codeql",
+          conclusion: "unknown",
+          status: "in_progress"
+        }
+      ],
+      defaultConfig
+    );
+
+    expect(result.warnings).toEqual([
+      "Some checks are still running or queued: CodeQL (go) (workflow: codeql). Run this action as the final job with `if: always()` and `needs` to avoid incomplete triage. If those checks run in a separate workflow, trigger this action from `workflow_run` instead and list them: `workflows: [\"codeql\"]` — see the README's Fork Pull Requests section."
+    ]);
+  });
+
+  it("dedupes workflow names across multiple pending checks in the same workflow", () => {
+    const result = analyzeChecks(
+      [
+        {
+          name: "CodeQL (go)",
+          workflowName: "codeql",
+          conclusion: "unknown",
+          status: "in_progress"
+        },
+        {
+          name: "CodeQL (javascript-typescript)",
+          workflowName: "codeql",
+          conclusion: "unknown",
+          status: "in_progress"
+        }
+      ],
+      defaultConfig
+    );
+
+    expect(result.warnings[0]).toContain('`workflows: ["codeql"]`');
+  });
 });
