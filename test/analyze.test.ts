@@ -101,4 +101,47 @@ describe("analyzeChecks", () => {
 
     expect(result.warnings[0]).toContain('`workflows: ["codeql"]`');
   });
+
+  it("suggests needs: instead of workflow_run for a pending check in doctor's own workflow", () => {
+    const result = analyzeChecks(
+      [
+        {
+          name: "e2e smoke",
+          workflowName: "ci",
+          conclusion: "unknown",
+          status: "in_progress"
+        }
+      ],
+      defaultConfig,
+      { currentWorkflowName: "ci" }
+    );
+
+    expect(result.warnings[0]).toContain("this same workflow");
+    expect(result.warnings[0]).toContain("`needs:`");
+    expect(result.warnings[0]).not.toContain('workflows: ["ci"]');
+  });
+
+  it("splits same-workflow and other-workflow suggestions when both are pending", () => {
+    const result = analyzeChecks(
+      [
+        {
+          name: "e2e smoke",
+          workflowName: "ci",
+          conclusion: "unknown",
+          status: "in_progress"
+        },
+        {
+          name: "CodeQL (go)",
+          workflowName: "codeql",
+          conclusion: "unknown",
+          status: "in_progress"
+        }
+      ],
+      defaultConfig,
+      { currentWorkflowName: "ci" }
+    );
+
+    expect(result.warnings[0]).toContain("this same workflow");
+    expect(result.warnings[0]).toContain('`workflows: ["codeql"]`');
+  });
 });

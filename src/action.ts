@@ -113,7 +113,8 @@ export async function runAction(
       config,
       checks,
       // The action job is necessarily in progress while it renders the comment.
-      ignoredWarningCheckNames: createCurrentCheckNameCandidates(runtime)
+      ignoredWarningCheckNames: createCurrentCheckNameCandidates(runtime),
+      currentWorkflowName: runtime.getEnv?.("GITHUB_WORKFLOW")
     });
 
     if (dryRun) {
