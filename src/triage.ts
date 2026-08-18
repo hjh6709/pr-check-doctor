@@ -14,6 +14,7 @@ export interface TriageChecksInput {
   checks: NormalizedCheck[];
   logsByCheckName?: Record<string, string>;
   ignoredWarningCheckNames?: string[];
+  currentWorkflowName?: string;
 }
 
 export function createTriageComment(input: TriageCommentInput): string {
@@ -28,7 +29,8 @@ export function createTriageCommentFromChecks(input: TriageChecksInput): string 
   const checks = input.checks.map((check) => attachLog(check, input.logsByCheckName));
   return renderComment(
     analyzeChecks(checks, input.config, {
-      ignoredWarningCheckNames: input.ignoredWarningCheckNames
+      ignoredWarningCheckNames: input.ignoredWarningCheckNames,
+      currentWorkflowName: input.currentWorkflowName
     }),
     input.config.comment.language
   );

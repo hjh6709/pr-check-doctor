@@ -6,6 +6,7 @@ import type { AnalysisResult, DoctorConfig, NormalizedCheck } from "./types.js";
 
 interface AnalysisOptions {
   ignoredWarningCheckNames?: string[];
+  currentWorkflowName?: string;
 }
 
 export function analyzeChecks(
@@ -19,14 +20,20 @@ export function analyzeChecks(
     verdict: calculateVerdict(issues),
     issues,
     // Pending checks are not failures yet, but the comment should make incomplete triage explicit.
-    warnings: createWarnings(checks, options.ignoredWarningCheckNames ?? [], config.comment.language)
+    warnings: createWarnings(
+      checks,
+      options.ignoredWarningCheckNames ?? [],
+      config.comment.language,
+      options.currentWorkflowName
+    )
   };
 }
 
 function createWarnings(
   checks: NormalizedCheck[],
   ignoredCheckNames: string[],
-  language: Language
+  language: Language,
+  currentWorkflowName: string | undefined
 ): string[] {
   const ignoredNames = new Set(ignoredCheckNames.map(normalizeCheckName));
   const incompleteChecks = checks
@@ -38,7 +45,7 @@ function createWarnings(
     return [];
   }
 
-  return [translate(language).incompleteChecksWarning(incompleteChecks)];
+  return [translate(language).incompleteChecksWarning(incompleteChecks, currentWorkflowName)];
 }
 
 function normalizeCheckName(value: string): string {
