@@ -55,7 +55,7 @@ jobs:
 `v0` 会跟踪最新的 `v0.x.y` 版本,因此会自动获取 patch 和 minor 更新。对于安全性要求较高的仓库,建议使用完整的 commit SHA 而不是可变标签进行固定:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@7c8470ffe18d6fc9d1f432bdfe45579e6c662757 # v0.6.0
+      - uses: hjh6709/pr-check-doctor@8224ce1d944b223bfe3a5c71923e58bed89bbc08 # v0.6.1
         with:
           github-token: ${{ github.token }}
 ```
@@ -165,4 +165,4 @@ jobs:
 
 ## 状态
 
-PR Check Doctor 自 `v0.6.0` 起已在 GitHub Marketplace 上发布。发布新版本的流程请见 `docs/release-checklist.md`。
+PR Check Doctor 自 `v0.6.1` 起已在 GitHub Marketplace 上发布。发布新版本的流程请见 `docs/release-checklist.md`。

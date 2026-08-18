@@ -55,7 +55,7 @@ jobs:
 `v0`는 최신 `v0.x.y` 릴리즈를 추적하므로 patch/minor 업데이트를 자동으로 반영합니다. 보안에 민감한 저장소라면 태그 대신 전체 커밋 SHA로 고정하세요:
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@7c8470ffe18d6fc9d1f432bdfe45579e6c662757 # v0.6.0
+      - uses: hjh6709/pr-check-doctor@8224ce1d944b223bfe3a5c71923e58bed89bbc08 # v0.6.1
         with:
           github-token: ${{ github.token }}
 ```
@@ -165,4 +165,4 @@ jobs:
 
 ## Status
 
-PR Check Doctor는 `v0.6.0`부터 GitHub Marketplace에 공개돼 있습니다. 새 릴리즈를 내는 과정은 `docs/release-checklist.md`를 참고하세요.
+PR Check Doctor는 `v0.6.1`부터 GitHub Marketplace에 공개돼 있습니다. 새 릴리즈를 내는 과정은 `docs/release-checklist.md`를 참고하세요.

@@ -55,7 +55,7 @@ jobs:
 `v0` は最新の `v0.x.y` リリースを追跡するため、patch/minor の更新が自動的に反映されます。セキュリティ要件の厳しいリポジトリでは、可変タグの代わりにフルコミット SHA で固定してください。
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@7c8470ffe18d6fc9d1f432bdfe45579e6c662757 # v0.6.0
+      - uses: hjh6709/pr-check-doctor@8224ce1d944b223bfe3a5c71923e58bed89bbc08 # v0.6.1
         with:
           github-token: ${{ github.token }}
 ```
@@ -165,4 +165,4 @@ jobs:
 
 ## ステータス
 
-PR Check Doctor は `v0.6.0` 以降、GitHub Marketplace で公開されています。新しいリリースを出す手順については `docs/release-checklist.md` を参照してください。
+PR Check Doctor は `v0.6.1` 以降、GitHub Marketplace で公開されています。新しいリリースを出す手順については `docs/release-checklist.md` を参照してください。
