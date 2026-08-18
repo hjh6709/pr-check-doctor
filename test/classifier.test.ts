@@ -97,4 +97,17 @@ describe("classifyCheck", () => {
     expect(issue.category).toBe("race_detected");
     expect(issue.likelyCause).toBe("Go race detector가 데이터 레이스를 보고했습니다.");
   });
+
+  it("does not classify a generic exit-code failure as build_failure", () => {
+    const issue = classifyCheck(
+      {
+        name: "frontend build",
+        conclusion: "failure",
+        log: "AssertionError: expected 1 to equal 2\n##[error]Process completed with exit code 1."
+      },
+      defaultConfig
+    );
+
+    expect(issue.category).toBe("unknown");
+  });
 });
