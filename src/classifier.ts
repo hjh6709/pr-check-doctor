@@ -91,7 +91,9 @@ function classifyByBuiltInPatterns(check: NormalizedCheck): FailureCategory {
     return "dependency_drift";
   }
 
-  if (/\b(docker build|build failed|image build|exit code)\b/.test(haystack)) {
+  // "exit code" was dropped: it's GitHub's own generic step-failure banner, not a build-specific signal —
+  // it was misclassifying unrelated failures (e.g. a test assertion) as build_failure.
+  if (/\b(docker build|build failed|image build)\b/.test(haystack)) {
     return "build_failure";
   }
 
