@@ -48,10 +48,15 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
           SHA: ${{ steps.release.outputs.sha }}
         run: |
-          sed -i -E "s|hjh6709/pr-check-doctor@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+|hjh6709/pr-check-doctor@${SHA} # ${TAG}|" README.md
-          sed -i -E "s|as of \`v[0-9]+\.[0-9]+\.[0-9]+\`|as of \`${TAG}\`|" README.md
+          # README.md and every translated README.<lang>.md share the same two
+          # version-specific patterns (SHA-pin comment, backtick-wrapped version in
+          # Status) even though the surrounding prose differs per language.
+          for file in README*.md; do
+            sed -i -E "s|hjh6709/pr-check-doctor@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+|hjh6709/pr-check-doctor@${SHA} # ${TAG}|" "$file"
+            sed -i -E "s|\`v[0-9]+\.[0-9]+\.[0-9]+\`|\`${TAG}\`|" "$file"
+          done
 
-          if git diff --quiet -- README.md; then
+          if git diff --quiet -- README*.md; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"

@@ -55,7 +55,7 @@ jobs:
 `v0` suit la dernière version `v0.x.y`, ce qui permet de récupérer automatiquement les mises à jour patch et minor. Pour les dépôts sensibles en matière de sécurité, épinglez l'action sur un commit SHA complet plutôt que sur un tag mutable :
 
 ```yaml
-      - uses: hjh6709/pr-check-doctor@d0f5e1c592c3afee12dc6b998fb9600d9b28237f # v0.3.0
+      - uses: hjh6709/pr-check-doctor@7c8470ffe18d6fc9d1f432bdfe45579e6c662757 # v0.6.0
         with:
           github-token: ${{ github.token }}
 ```
@@ -165,4 +165,4 @@ Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour le flux de développement, les
 
 ## Statut
 
-PR Check Doctor est publié sur le GitHub Marketplace depuis la version `v0.3.0`. Consultez `docs/release-checklist.md` pour le processus utilisé pour publier de nouvelles versions.
+PR Check Doctor est publié sur le GitHub Marketplace depuis la version `v0.6.0`. Consultez `docs/release-checklist.md` pour le processus utilisé pour publier de nouvelles versions.
